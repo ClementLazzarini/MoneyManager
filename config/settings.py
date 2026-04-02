@@ -38,6 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'moneymanager',
+    'tailwind',
+    'theme', 
 ]
 
 MIDDLEWARE = [
@@ -121,3 +123,6 @@ STATICFILES_DIRS = [ BASE_DIR / 'static', ]
 
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / "mediafiles"
+
+TAILWIND_APP_NAME = 'theme'
+INTERNAL_IPS = ["127.0.0.1"]
