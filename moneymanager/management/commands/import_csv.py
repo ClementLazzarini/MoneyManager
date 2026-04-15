@@ -3,7 +3,7 @@ import hashlib
 from datetime import datetime
 from django.core.management.base import BaseCommand
 from django.conf import settings
-from moneymanager.models import Transaction
+from moneymanager.models import Transaction, Owner
 
 class Command(BaseCommand):
     help = 'Importe les transactions bancaires depuis un fichier CSV situé dans le dossier DATA'
@@ -14,8 +14,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         filename = kwargs['filename']
+        owner_name = kwargs['owner'].capitalize()
         
-        # Construction du chemin absolu : BASE_DIR / 'DATA' / nom_du_fichier
+        owner_obj, created = Owner.objects.get_or_create(name=owner_name)
         file_path = settings.BASE_DIR / 'DATA' / filename
 
         try:
@@ -51,6 +52,7 @@ class Command(BaseCommand):
 
                     Transaction.objects.create(
                         bank_reference=bank_ref,
+                        owner=owner_obj,
                         bank_date=bank_date,
                         bank_label=row['label'][:255],
                         bank_category=row['category'][:100],

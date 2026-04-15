@@ -8,6 +8,13 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
+    
+
+class Owner(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return self.name
 
 
 class Transaction(models.Model):
@@ -60,6 +67,13 @@ class Transaction(models.Model):
         blank=True, 
         null=True, 
         help_text="Un petit mot pour se souvenir du pourquoi du comment"
+    )
+
+    owner = models.ForeignKey(
+        Owner, 
+        on_delete=models.CASCADE, 
+        null=True,
+        related_name='transactions'
     )
 
     # ==========================================
