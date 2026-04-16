@@ -17,7 +17,9 @@ Including another URLconf
 from django.urls import path
 from . import views
 
+app_name = 'moneymanager'
 
 urlpatterns = [
-    path('', views.home, name='home'),
+    path('dashboard/<str:owner_name>/<int:year>/<int:month>/', views.dashboard, name='dashboard'),
+    path('process-transaction/', views.process_transaction, name='process_transaction'),
 ]
