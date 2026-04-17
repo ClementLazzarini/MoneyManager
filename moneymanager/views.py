@@ -5,6 +5,20 @@ from .models import Transaction, Owner, Category
 
 def dashboard(request, owner_name, year, month):
     owner = get_object_or_404(Owner, name__iexact=owner_name)
+
+    if month == 1:
+        prev_month, prev_year = 12, year - 1
+    else:
+        prev_month, prev_year = month - 1, year
+
+    if month == 12:
+        next_month, next_year = 1, year + 1
+    else:
+        next_month, next_year = month + 1, year
+
+    # Pour un affichage plus propre en français
+    months_fr = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
+    current_month_name = months_fr[month]
     
     # 1. Inbox : Transactions non traitées
     unprocessed = Transaction.objects.filter(
@@ -41,6 +55,11 @@ def dashboard(request, owner_name, year, month):
         'owner': owner,
         'year': year, 
         'month': month,
+        'month_name': current_month_name,
+        'prev_m': prev_month,
+        'prev_y': prev_year,
+        'next_m': next_month,
+        'next_y': next_year, 
         'unprocessed': unprocessed,
         'stats': stats,
         'categories_list': Category.objects.all(),

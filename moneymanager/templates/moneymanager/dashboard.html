@@ -20,8 +20,23 @@
         txCustomDate: '' 
     }">
         
-        <div class="bg-purple-600 text-white text-center py-2 rounded-t-lg font-bold text-xl shadow-md">
-            {{ owner.name }} - {{ month }}/{{ year }}
+        <div class="bg-purple-600 text-white rounded-t-lg shadow-md flex justify-between items-center px-4 py-3">
+    
+            <a href="{% url 'moneymanager:dashboard' owner.name|lower prev_y prev_m %}" 
+            class="hover:bg-purple-700 p-2 rounded-full transition-colors flex items-center justify-center">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            </a>
+
+            <div class="text-center">
+                <h1 class="font-bold text-2xl tracking-wide">{{ owner.name }}</h1>
+                <p class="text-purple-200 text-sm font-medium uppercase tracking-widest">{{ month_name }} {{ year }}</p>
+            </div>
+
+            <a href="{% url 'moneymanager:dashboard' owner.name|lower next_y next_m %}" 
+            class="hover:bg-purple-700 p-2 rounded-full transition-colors flex items-center justify-center">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </a>
+            
         </div>
 
         <div class="bg-white shadow-lg rounded-b-lg overflow-hidden border-x border-b border-gray-300">
