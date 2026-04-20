@@ -1,7 +1,7 @@
 from django.shortcuts import redirect, render, get_object_or_404
 from django.db.models import Sum
 from decimal import Decimal
-from .models import Transaction, Owner, Category
+from .models import Transaction, Owner, Category, MonthlyBudget
 
 def dashboard(request, owner_name, year, month):
     owner = get_object_or_404(Owner, name__iexact=owner_name)
@@ -112,3 +112,4 @@ def process_transaction(request):
         # 5. On redirige l'utilisateur vers son tableau de bord (au même mois)
         year, month, _ = custom_date.split('-')
         return redirect('moneymanager:dashboard', owner_name=transaction.owner.name.lower(), year=int(year), month=int(month)) # type: ignore
+    
