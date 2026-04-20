@@ -40,17 +40,27 @@
         </div>
 
         <div class="bg-white shadow-lg rounded-b-lg overflow-hidden border-x border-b border-gray-300">
-            <div class="grid grid-cols-3 bg-gray-200 border-b border-gray-300 font-bold text-center text-sm py-2">
+            <div class="grid grid-cols-5 bg-gray-200 border-b border-gray-300 font-bold text-center text-xs md:text-sm py-2">
                 <div class="border-r border-gray-300">Libellé</div>
+                <div class="border-r border-gray-300 bg-blue-50">Prévu</div>
                 <div class="border-r border-gray-300 bg-red-50">Coût Réel</div>
+                <div class="border-r border-gray-300 bg-purple-50">Delta</div>
                 <div class="bg-green-50">Gain Réel</div>
             </div>
 
             {% for item in stats %}
-            <div class="grid grid-cols-3 border-b border-gray-200 text-sm hover:bg-gray-50 transition">
-                <div class="p-2 border-r border-gray-200 font-medium">{{ item.category.name }}</div>
-                <div class="p-2 border-r border-gray-200 text-right text-red-600">{{ item.real_cost|floatformat:2 }} €</div>
-                <div class="p-2 text-right text-green-600">{{ item.real_gain|floatformat:2 }} €</div>
+            <div class="grid grid-cols-5 border-b border-gray-200 text-sm hover:bg-gray-50 transition">
+                <div class="p-2 border-r border-gray-200 font-medium truncate flex items-center">{{ item.category.name }}</div>
+                
+                <div class="p-2 border-r border-gray-200 text-right text-blue-600 flex items-center justify-end">{{ item.target|floatformat:2 }} €</div>
+                
+                <div class="p-2 border-r border-gray-200 text-right text-red-600 flex items-center justify-end">{{ item.real_cost|floatformat:2 }} €</div>
+                
+                <div class="p-2 border-r border-gray-200 text-right font-bold flex items-center justify-end {% if item.delta >= 0 %}text-green-500{% else %}text-red-600{% endif %}">
+                    {{ item.delta|floatformat:2 }} €
+                </div>
+                
+                <div class="p-2 text-right text-green-600 flex items-center justify-end">{{ item.real_gain|floatformat:2 }} €</div>
             </div>
             {% endfor %}
         </div>

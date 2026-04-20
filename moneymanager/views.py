@@ -31,6 +31,11 @@ def dashboard(request, owner_name, year, month):
     stats = []
 
     for cat in categories:
+        try:
+            budget_obj = MonthlyBudget.objects.get(owner=owner, category=cat, year=year, month=month)
+            target_amount = budget_obj.target_amount
+        except MonthlyBudget.DoesNotExist:
+            target_amount = 0
         # On calcule le coût réel (somme des montants négatifs)
         real_cost = Transaction.objects.filter(
             owner=owner, category=cat, is_processed=True,
@@ -45,9 +50,16 @@ def dashboard(request, owner_name, year, month):
             custom_date__year=year, custom_date__month=month
         ).aggregate(total=Sum('custom_amount'))['total'] or 0
 
+        real_cost_abs = abs(real_cost) 
+        
+        # --- NOUVEAU : Calcul du Delta (Ce qu'il reste dans l'enveloppe) ---
+        delta = target_amount - real_cost_abs
+
         stats.append({
             'category': cat,
-            'real_cost': abs(real_cost), # On met en positif pour l'affichage
+            'target': target_amount, # Le prévu
+            'real_cost': real_cost_abs, # Le dépensé
+            'delta': delta, # Le reste
             'real_gain': real_gain,
         })
 
