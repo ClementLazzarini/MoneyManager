@@ -1,7 +1,7 @@
 from django.shortcuts import redirect, render, get_object_or_404
 from django.db.models import Sum
 from decimal import Decimal
-from .models import Transaction, Owner, Category, MonthlyBudget
+from .models import Transaction, Owner, Category, MonthlyBudget, DefaultBudget
 
 def dashboard(request, owner_name, year, month):
     owner = get_object_or_404(Owner, name__iexact=owner_name)
@@ -31,11 +31,19 @@ def dashboard(request, owner_name, year, month):
     stats = []
 
     for cat in categories:
+        # 1. On cherche d'abord s'il y a une exception pour CE mois précis
         try:
             budget_obj = MonthlyBudget.objects.get(owner=owner, category=cat, year=year, month=month)
             target_amount = budget_obj.target_amount
         except MonthlyBudget.DoesNotExist:
-            target_amount = 0
+            # 2. S'il n'y a pas d'exception, on cherche le budget "Classique/Défaut"
+            try:
+                default_obj = DefaultBudget.objects.get(owner=owner, category=cat)
+                target_amount = default_obj.amount
+            except DefaultBudget.DoesNotExist:
+                # 3. S'il n'y a ni exception ni défaut, l'enveloppe est à 0
+                target_amount = 0
+        
         # On calcule le coût réel (somme des montants négatifs)
         real_cost = Transaction.objects.filter(
             owner=owner, category=cat, is_processed=True,
