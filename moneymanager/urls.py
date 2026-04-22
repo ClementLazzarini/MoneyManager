@@ -22,4 +22,6 @@ app_name = 'moneymanager'
 urlpatterns = [
     path('dashboard/<str:owner_name>/<int:year>/<int:month>/', views.dashboard, name='dashboard'),
     path('process-transaction/', views.process_transaction, name='process_transaction'),
+    path('dashboard/<str:owner_name>/<int:year>/<int:month>/category/<int:category_id>/', views.category_detail, name='category_detail'),
+    path('cancel-transaction/<int:transaction_id>/', views.cancel_transaction, name='cancel_transaction'),
 ]

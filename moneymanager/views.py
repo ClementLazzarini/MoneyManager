@@ -1,5 +1,6 @@
 from django.shortcuts import redirect, render, get_object_or_404
 from django.db.models import Sum
+from django.urls import reverse
 from decimal import Decimal
 from .models import Transaction, Owner, Category, MonthlyBudget, DefaultBudget
 
@@ -132,4 +133,48 @@ def process_transaction(request):
         # 5. On redirige l'utilisateur vers son tableau de bord (au même mois)
         year, month, _ = custom_date.split('-')
         return redirect('moneymanager:dashboard', owner_name=transaction.owner.name.lower(), year=int(year), month=int(month)) # type: ignore
-    
+
+
+def category_detail(request, owner_name, year, month, category_id):
+    owner = get_object_or_404(Owner, name__iexact=owner_name)
+    category = get_object_or_404(Category, id=category_id)
+
+    # On récupère les transactions de cette enveloppe pour ce mois
+    transactions = Transaction.objects.filter(
+        owner=owner,
+        category=category,
+        is_processed=True,
+        custom_date__year=year,
+        custom_date__month=month
+    ).order_by('-custom_date') # De la plus récente à la plus ancienne
+
+    context = {
+        'owner': owner,
+        'year': year,
+        'month': month,
+        'category': category,
+        'transactions': transactions,
+    }
+    return render(request, 'moneymanager/category_detail.html', context)
+
+
+def cancel_transaction(request, transaction_id):
+    if request.method == 'POST':
+        transaction = get_object_or_404(Transaction, id=transaction_id)
+        
+        # On sauvegarde les infos de routage AVANT d'effacer la catégorie
+        owner_name = transaction.owner.name.lower()
+        year = transaction.custom_date.year
+        month = transaction.custom_date.month
+        category_id = transaction.category.id if transaction.category else None
+
+        # On réinitialise la transaction pour la renvoyer dans l'Inbox
+        transaction.is_processed = False
+        transaction.category = None
+        transaction.save()
+
+        # On recharge la page de détail de la catégorie
+        if category_id:
+            return redirect('moneymanager:category_detail', owner_name=owner_name, year=year, month=month, category_id=category_id)
+            
+    return redirect('moneymanager:dashboard') # Sécurité au cas où

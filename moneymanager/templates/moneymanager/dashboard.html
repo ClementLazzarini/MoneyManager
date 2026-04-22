@@ -50,7 +50,11 @@
 
             {% for item in stats %}
             <div class="grid grid-cols-5 border-b border-gray-200 text-sm hover:bg-gray-50 transition">
-                <div class="p-2 border-r border-gray-200 font-medium truncate flex items-center">{{ item.category.name }}</div>
+                <div class="p-2 border-r border-gray-200 font-medium truncate flex items-center">
+                    <a href="{% url 'moneymanager:category_detail' owner.name|lower year month item.category.id %}" class="text-purple-600 hover:text-purple-800 hover:underline">
+                        {{ item.category.name }}
+                    </a>
+                </div>
                 
                 <div class="p-2 border-r border-gray-200 text-right text-blue-600 flex items-center justify-end">{{ item.target|floatformat:2 }} €</div>
                 

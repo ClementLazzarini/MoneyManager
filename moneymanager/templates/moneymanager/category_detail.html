@@ -1,0 +1,58 @@
+{% load tailwind_tags %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Détail - {{ category.name }}</title>
+    {% tailwind_css %}
+</head>
+<body class="bg-gray-100 p-4 md:p-6">
+
+    <div class="max-w-4xl mx-auto space-y-6">
+        
+        <div class="bg-white p-4 rounded-lg shadow-md flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">{{ category.name }}</h1>
+                <p class="text-sm text-gray-500">{{ month }}/{{ year }} - {{ owner.name }}</p>
+            </div>
+            <a href="{% url 'moneymanager:dashboard' owner.name|lower year month %}" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded transition">
+                &larr; Retour au tableau
+            </a>
+        </div>
+
+        <div class="bg-white shadow-lg rounded-lg overflow-hidden border border-gray-200">
+            {% if transactions %}
+                <ul class="divide-y divide-gray-200">
+                    {% for tx in transactions %}
+                    <li class="p-4 flex flex-col md:flex-row justify-between items-center hover:bg-gray-50">
+                        <div class="flex-1 mb-2 md:mb-0">
+                            <p class="font-bold text-gray-800">{{ tx.bank_label }}</p>
+                            <p class="text-xs text-gray-500">Imputé le : {{ tx.custom_date }} (Banque : {{ tx.bank_date }})</p>
+                            {% if tx.comment %}
+                                <p class="text-sm text-gray-600 mt-1 italic">"{{ tx.comment }}"</p>
+                            {% endif %}
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="text-lg font-bold {% if tx.custom_amount < 0 %}text-red-500{% else %}text-green-600{% endif %}">
+                                {{ tx.custom_amount }} €
+                            </span>
+                            <form method="POST" action="{% url 'moneymanager:cancel_transaction' tx.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="bg-red-100 text-red-600 hover:bg-red-200 text-sm font-bold py-1 px-3 rounded transition">
+                                    Annuler
+                                </button>
+                            </form>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="p-6 text-center text-gray-500 italic">Aucune transaction dans cette enveloppe ce mois-ci.</p>
+            {% endif %}
+        </div>
+
+    </div>
+
+</body>
+</html>
