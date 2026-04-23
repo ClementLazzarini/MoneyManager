@@ -1,13 +1,9 @@
+{% extends 'base.html' %}
 {% load tailwind_tags %}
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Détail - {{ category.name }}</title>
-    {% tailwind_css %}
-</head>
-<body class="bg-gray-100 p-4 md:p-6">
+
+{% block title %}Budget - {{ owner.name }}{% endblock title %}
+
+{% block content %}
 
     <div class="max-w-4xl mx-auto space-y-6">
         
@@ -54,5 +50,4 @@
 
     </div>
 
-</body>
-</html>
+{% endblock content %}

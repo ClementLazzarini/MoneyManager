@@ -2,7 +2,9 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.db.models import Sum
 from django.urls import reverse
 from decimal import Decimal
-from .models import Transaction, Owner, Category, MonthlyBudget, DefaultBudget, AccountBalance, GlobalEnvelope
+import time
+from datetime import datetime
+from .models import Transaction, Owner, Category, MonthlyBudget, DefaultBudget, AccountBalance, GlobalEnvelope, CategoryEnvelopeLink
 
 def dashboard(request, owner_name, year, month):
     owner = get_object_or_404(Owner, name__iexact=owner_name)
@@ -61,8 +63,9 @@ def dashboard(request, owner_name, year, month):
 
         real_cost_abs = abs(real_cost) 
         
-        # --- NOUVEAU : Calcul du Delta (Ce qu'il reste dans l'enveloppe) ---
         delta = target_amount - real_cost_abs
+
+        link = CategoryEnvelopeLink.objects.filter(owner=owner, category=cat).first()
 
         stats.append({
             'category': cat,
@@ -70,6 +73,7 @@ def dashboard(request, owner_name, year, month):
             'real_cost': real_cost_abs, # Le dépensé
             'delta': delta, # Le reste
             'real_gain': real_gain,
+            'linked_env': link.envelope.name if link else None,
         })
 
     context = {
@@ -90,49 +94,78 @@ def dashboard(request, owner_name, year, month):
 
 def process_transaction(request):
     if request.method == 'POST':
-        # 1. On récupère les données envoyées par la modale Alpine
         tx_id = request.POST.get('transaction_id')
         category_id = request.POST.get('category_id')
         custom_amount_str = request.POST.get('custom_amount')
         custom_date = request.POST.get('custom_date')
 
-        # 2. On récupère la transaction et la catégorie en base de données
         transaction = get_object_or_404(Transaction, id=tx_id)
         category = get_object_or_404(Category, id=category_id)
         
-        # On convertit le montant en nombre décimal propre
         new_amount = Decimal(custom_amount_str.replace(',', '.'))
         original_amount = transaction.custom_amount
-
-        # 3. LA LOGIQUE DE DIVISION (SPLIT)
-        # Si le montant saisi est différent du montant actuel de la ligne
         remainder = original_amount - new_amount
         
         if remainder != 0:
-            # On clone la transaction pour le "reste à classer"
             Transaction.objects.create(
                 owner=transaction.owner,
-                bank_reference=transaction.bank_reference, # On garde la même empreinte
+                bank_reference=transaction.bank_reference,
                 bank_date=transaction.bank_date,
                 bank_label=transaction.bank_label,
                 bank_category=transaction.bank_category,
                 bank_amount=transaction.bank_amount,
-                # Les champs modifiés pour le reste :
                 custom_date=transaction.bank_date,
                 custom_amount=remainder,
-                is_processed=False # Ça retourne dans l'inbox !
+                is_processed=False
             )
 
-        # 4. On met à jour la transaction d'origine
         transaction.category = category
         transaction.custom_amount = new_amount
         transaction.custom_date = custom_date
         transaction.is_processed = True
         transaction.save()
 
-        # 5. On redirige l'utilisateur vers son tableau de bord (au même mois)
+        link = CategoryEnvelopeLink.objects.filter(owner=transaction.owner, category=category).first()
+        
+        if link:
+            # Si c'est une PROVISION (Épargne), on AJOUTE à l'enveloppe
+            if link.link_type == 'PROVISION':
+                link.envelope.amount -= new_amount
+            # Si c'est une EXPENSE (Dépense), on RETIRE de l'enveloppe
+            elif link.link_type == 'EXPENSE':
+                link.envelope.amount += new_amount
+            link.envelope.save()
+
         year, month, _ = custom_date.split('-')
-        return redirect('moneymanager:dashboard', owner_name=transaction.owner.name.lower(), year=int(year), month=int(month)) # type: ignore
+        return redirect('moneymanager:dashboard', owner_name=transaction.owner.name.lower(), year=int(year), month=int(month))
+    
+
+def cancel_transaction(request, transaction_id):
+    if request.method == 'POST':
+        transaction = get_object_or_404(Transaction, id=transaction_id)
+        owner_name = transaction.owner.name.lower()
+        year = transaction.custom_date.year
+        month = transaction.custom_date.month
+        category_id = transaction.category.id if transaction.category else None
+
+        # --- ANNULATION DE L'IMPACT SUR L'ENVELOPPE ---
+        if transaction.category:
+            link = CategoryEnvelopeLink.objects.filter(owner=transaction.owner, category=transaction.category).first()
+            if link:
+                if link.link_type == 'PROVISION':
+                    link.envelope.amount += transaction.custom_amount 
+                elif link.link_type == 'EXPENSE':
+                    link.envelope.amount -= transaction.custom_amount
+                link.envelope.save()
+
+        transaction.is_processed = False
+        transaction.category = None
+        transaction.save()
+
+        if category_id:
+            return redirect('moneymanager:category_detail', owner_name=owner_name, year=year, month=month, category_id=category_id)
+            
+    return redirect('moneymanager:dashboard')
 
 
 def category_detail(request, owner_name, year, month, category_id):
@@ -158,30 +191,10 @@ def category_detail(request, owner_name, year, month, category_id):
     return render(request, 'moneymanager/category_detail.html', context)
 
 
-def cancel_transaction(request, transaction_id):
-    if request.method == 'POST':
-        transaction = get_object_or_404(Transaction, id=transaction_id)
-        
-        # On sauvegarde les infos de routage AVANT d'effacer la catégorie
-        owner_name = transaction.owner.name.lower()
-        year = transaction.custom_date.year
-        month = transaction.custom_date.month
-        category_id = transaction.category.id if transaction.category else None
-
-        # On réinitialise la transaction pour la renvoyer dans l'Inbox
-        transaction.is_processed = False
-        transaction.category = None
-        transaction.save()
-
-        # On recharge la page de détail de la catégorie
-        if category_id:
-            return redirect('moneymanager:category_detail', owner_name=owner_name, year=year, month=month, category_id=category_id)
-            
-    return redirect('moneymanager:dashboard')
-
-
 def wealth_dashboard(request, owner_name):
     owner = get_object_or_404(Owner, name__iexact=owner_name)
+
+    now = datetime.now()
     
     # 1. Récupération du solde total
     balance_obj, created = AccountBalance.objects.get_or_create(owner=owner)
@@ -196,6 +209,8 @@ def wealth_dashboard(request, owner_name):
     
     context = {
         'owner': owner,
+        'year': now.year,
+        'month': now.month,
         'total_cash': total_cash,
         'envelopes': envelopes,
         'total_allocated': total_allocated,
@@ -252,3 +267,51 @@ def delete_global_envelope(request, owner_name, envelope_id):
         envelope = get_object_or_404(GlobalEnvelope, id=envelope_id, owner__name__iexact=owner_name)
         envelope.delete()
     return redirect('moneymanager:wealth_dashboard', owner_name=owner_name)
+
+
+def add_manual_transaction(request, owner_name):
+    if request.method == 'POST':
+        owner = get_object_or_404(Owner, name__iexact=owner_name)
+        
+        label = request.POST.get('label')
+        amount_str = request.POST.get('amount')
+        date_str = request.POST.get('date')
+        category_id = request.POST.get('category_id')
+        
+        amount = Decimal(amount_str.replace(',', '.'))
+        
+        # On crée une référence unique "MANUAL-..." pour simuler la banque
+        unique_ref = f"MANUAL-{int(time.time())}"
+        
+        # 1. Création de la transaction
+        transaction = Transaction.objects.create(
+            owner=owner,
+            bank_reference=unique_ref,
+            bank_date=date_str,
+            bank_label=f"[MANUEL] {label}",
+            bank_amount=amount,
+            custom_date=date_str,
+            custom_amount=amount,
+            is_processed=False
+        )
+        
+        # 2. Si une catégorie a été choisie, on la classe et on active le pont
+        if category_id:
+            category = get_object_or_404(Category, id=category_id)
+            transaction.category = category
+            transaction.is_processed = True
+            transaction.save()
+            
+            link = CategoryEnvelopeLink.objects.filter(owner=owner, category=category).first()
+            if link:
+                if link.link_type == 'PROVISION':
+                    link.envelope.amount -= amount 
+                elif link.link_type == 'EXPENSE':
+                    link.envelope.amount += amount
+                link.envelope.save()
+                
+        # 3. Redirection vers le mois de la dépense
+        year, month, _ = date_str.split('-')
+        return redirect('moneymanager:dashboard', owner_name=owner_name, year=int(year), month=int(month))
+        
+    return redirect('moneymanager:dashboard', owner_name=owner_name, year=datetime.now().year, month=datetime.now().month)

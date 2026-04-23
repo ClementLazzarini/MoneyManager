@@ -1,14 +1,9 @@
+{% extends 'base.html' %}
 {% load tailwind_tags %}
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dispatch Argent - {{ owner.name }}</title>
-    {% tailwind_css %}
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-</head>
-<body class="bg-gray-100 font-sans leading-normal tracking-normal p-4 md:p-10">
+
+{% block title %}Budget - {{ owner.name }}{% endblock title %}
+
+{% block content %}
 
     <div class="max-w-5xl mx-auto space-y-8" 
         x-data="{ 
@@ -210,6 +205,4 @@
             </div>
         </div>
     </div>
-
-</body>
-</html>
+{% endblock content %}

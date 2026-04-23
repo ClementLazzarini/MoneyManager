@@ -1,4 +1,5 @@
 from django.db import models
+from decimal import Decimal
 
 class Category(models.Model):
     """
@@ -97,7 +98,7 @@ class DefaultBudget(models.Model):
     """
     owner = models.ForeignKey(Owner, on_delete=models.CASCADE, related_name='default_budgets')
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
-    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="Budget de base par défaut")
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), help_text="Budget de base par défaut")
 
     class Meta:
         unique_together = ('owner', 'category')
@@ -112,7 +113,7 @@ class MonthlyBudget(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     year = models.IntegerField()
     month = models.IntegerField()
-    target_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="L'enveloppe prévue pour ce mois")
+    target_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), help_text="L'enveloppe prévue pour ce mois")
 
     class Meta:
         unique_together = ('owner', 'category', 'year', 'month')
@@ -125,7 +126,7 @@ class MonthlyBudget(models.Model):
 class AccountBalance(models.Model):
     """Stocke le solde global actuel de tous les comptes cumulés"""
     owner = models.OneToOneField(Owner, on_delete=models.CASCADE, related_name='global_balance')
-    balance = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, help_text="L'argent total actuel en banque")
+    balance = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), help_text="L'argent total actuel en banque")
     last_updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
@@ -136,7 +137,7 @@ class GlobalEnvelope(models.Model):
     """Les pots ou sous-comptes virtuels (Sécurité, Voyage, Avances...)"""
     owner = models.ForeignKey(Owner, on_delete=models.CASCADE, related_name='global_envelopes')
     name = models.CharField(max_length=100, help_text="Ex: Big voyage, Sécurité, Holidays 2025")
-    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="Montant alloué (peut être négatif pour une avance)")
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), help_text="Montant alloué (peut être négatif pour une avance)")
     comment = models.CharField(max_length=255, blank=True, null=True, help_text="Notes (Ex: RTX)")
     
     class Meta:
@@ -144,3 +145,28 @@ class GlobalEnvelope(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.owner.name}) : {self.amount} €"
+
+
+class CategoryEnvelopeLink(models.Model):
+    """
+    Fait le pont automatique entre une Catégorie mensuelle et une Enveloppe globale.
+    """
+    LINK_TYPES = (
+        ('PROVISION', "Provision (Épargne) : Une dépense (-) AJOUTE de l'argent à l'enveloppe (+)"),
+        ('EXPENSE', "Consommation (Dépense réelle) : Une dépense (-) RETIRE de l'argent de l'enveloppe (-)"),
+    )
+    
+    owner = models.ForeignKey(Owner, on_delete=models.CASCADE, related_name='envelope_links')
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    envelope = models.ForeignKey(GlobalEnvelope, on_delete=models.CASCADE)
+    link_type = models.CharField(max_length=20, choices=LINK_TYPES, default='EXPENSE', help_text="Détermine comment la transaction impacte l'enveloppe.")
+
+    class Meta:
+        # Une catégorie mensuelle ne peut pointer que vers une seule enveloppe pour une personne
+        unique_together = ('owner', 'category')
+        
+    def get_link_type_display(self):
+        return dict(self.LINK_TYPES).get(self.link_type, self.link_type)
+
+    def __str__(self):
+        return f"Pont {self.owner.name} : {self.category.name} -> {self.envelope.name}"
