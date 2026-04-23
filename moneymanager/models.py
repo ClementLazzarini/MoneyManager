@@ -120,3 +120,27 @@ class MonthlyBudget(models.Model):
 
     def __str__(self):
         return f"{self.owner.name} - {self.category.name} ({self.month}/{self.year}) : {self.target_amount}€"
+    
+
+class AccountBalance(models.Model):
+    """Stocke le solde global actuel de tous les comptes cumulés"""
+    owner = models.OneToOneField(Owner, on_delete=models.CASCADE, related_name='global_balance')
+    balance = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, help_text="L'argent total actuel en banque")
+    last_updated = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Solde {self.owner.name} : {self.balance} €"
+
+
+class GlobalEnvelope(models.Model):
+    """Les pots ou sous-comptes virtuels (Sécurité, Voyage, Avances...)"""
+    owner = models.ForeignKey(Owner, on_delete=models.CASCADE, related_name='global_envelopes')
+    name = models.CharField(max_length=100, help_text="Ex: Big voyage, Sécurité, Holidays 2025")
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="Montant alloué (peut être négatif pour une avance)")
+    comment = models.CharField(max_length=255, blank=True, null=True, help_text="Notes (Ex: RTX)")
+    
+    class Meta:
+        ordering = ['-amount'] # Affiche les plus grosses enveloppes en premier
+
+    def __str__(self):
+        return f"{self.name} ({self.owner.name}) : {self.amount} €"

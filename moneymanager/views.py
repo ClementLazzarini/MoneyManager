@@ -2,7 +2,7 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.db.models import Sum
 from django.urls import reverse
 from decimal import Decimal
-from .models import Transaction, Owner, Category, MonthlyBudget, DefaultBudget
+from .models import Transaction, Owner, Category, MonthlyBudget, DefaultBudget, AccountBalance, GlobalEnvelope
 
 def dashboard(request, owner_name, year, month):
     owner = get_object_or_404(Owner, name__iexact=owner_name)
@@ -177,4 +177,78 @@ def cancel_transaction(request, transaction_id):
         if category_id:
             return redirect('moneymanager:category_detail', owner_name=owner_name, year=year, month=month, category_id=category_id)
             
-    return redirect('moneymanager:dashboard') # Sécurité au cas où
+    return redirect('moneymanager:dashboard')
+
+
+def wealth_dashboard(request, owner_name):
+    owner = get_object_or_404(Owner, name__iexact=owner_name)
+    
+    # 1. Récupération du solde total
+    balance_obj, created = AccountBalance.objects.get_or_create(owner=owner)
+    total_cash = balance_obj.balance
+    
+    # 2. Récupération des enveloppes et calcul du total alloué
+    envelopes = GlobalEnvelope.objects.filter(owner=owner)
+    total_allocated = envelopes.aggregate(Sum('amount'))['amount__sum'] or 0
+    
+    # 3. Calcul du B/C (Reste à allouer)
+    remainder = total_cash - total_allocated
+    
+    context = {
+        'owner': owner,
+        'total_cash': total_cash,
+        'envelopes': envelopes,
+        'total_allocated': total_allocated,
+        'remainder': remainder,
+    }
+    return render(request, 'moneymanager/wealth_dashboard.html', context)
+
+
+def add_global_envelope(request, owner_name):
+    if request.method == 'POST':
+        owner = get_object_or_404(Owner, name__iexact=owner_name)
+        
+        # Récupération des données du formulaire
+        name = request.POST.get('name')
+        amount = request.POST.get('amount', 0)
+        comment = request.POST.get('comment', '')
+
+        # Création de l'enveloppe
+        GlobalEnvelope.objects.create(
+            owner=owner,
+            name=name,
+            amount=amount,
+            comment=comment
+        )
+        
+        return redirect('moneymanager:wealth_dashboard', owner_name=owner_name)
+
+
+def update_account_balance(request, owner_name):
+    if request.method == 'POST':
+        owner = get_object_or_404(Owner, name__iexact=owner_name)
+        new_balance = request.POST.get('balance', 0)
+        
+        # On récupère l'objet (ou on le crée s'il n'existe pas) et on met à jour
+        balance_obj, created = AccountBalance.objects.get_or_create(owner=owner)
+        balance_obj.balance = new_balance
+        balance_obj.save()
+        
+        return redirect('moneymanager:wealth_dashboard', owner_name=owner_name)
+
+
+def edit_global_envelope(request, owner_name, envelope_id):
+    if request.method == 'POST':
+        envelope = get_object_or_404(GlobalEnvelope, id=envelope_id, owner__name__iexact=owner_name)
+        envelope.name = request.POST.get('name')
+        envelope.amount = request.POST.get('amount')
+        envelope.comment = request.POST.get('comment')
+        envelope.save()
+        return redirect('moneymanager:wealth_dashboard', owner_name=owner_name)
+
+
+def delete_global_envelope(request, owner_name, envelope_id):
+    if request.method == 'POST':
+        envelope = get_object_or_404(GlobalEnvelope, id=envelope_id, owner__name__iexact=owner_name)
+        envelope.delete()
+    return redirect('moneymanager:wealth_dashboard', owner_name=owner_name)

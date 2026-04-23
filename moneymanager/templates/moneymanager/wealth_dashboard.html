@@ -1,0 +1,215 @@
+{% load tailwind_tags %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dispatch Argent - {{ owner.name }}</title>
+    {% tailwind_css %}
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-gray-100 font-sans leading-normal tracking-normal p-4 md:p-10">
+
+    <div class="max-w-5xl mx-auto space-y-8" 
+        x-data="{ 
+        showAddModal: false, 
+        showBalanceModal: false, 
+        showEditModal: false,
+        editEnvId: '',
+        editEnvName: '',
+        editEnvAmount: '',
+        editEnvComment: ''
+     }">
+        
+        <div class="bg-gray-400 text-white shadow-md rounded-t-lg overflow-hidden border-b-4 border-gray-500">
+            <div class="flex justify-between items-center px-6 py-4">
+                <h1 class="text-xl font-black uppercase tracking-widest">Dispatch Argent</h1>
+                <div class="text-right">
+                    <p class="text-2xl font-bold">{{ owner.name }}</p>
+                    <p class="text-xs opacity-75">Situation au {% now "d/m/Y" %}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <div class="lg:col-span-4 space-y-4">
+                <h2 class="italic font-bold text-gray-600 border-b-2 border-gray-300 pb-1">Argent Actuel</h2>
+                <div class="bg-white p-6 rounded-lg shadow-inner border border-gray-200 flex justify-between items-center">
+                    <span class="text-lg font-medium text-gray-500">Total</span>
+                    <div class="flex items-center gap-4">
+                        <span class="text-2xl font-mono font-black text-gray-800">
+                            {{ total_cash|floatformat:2 }} €
+                        </span>
+                        <button @click="showBalanceModal = true" class="text-gray-400 hover:text-gray-800 transition transform hover:scale-110">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <a href="/" class="block text-center py-3 bg-gray-200 text-gray-600 rounded-lg font-bold hover:bg-gray-300 transition text-sm">
+                    &larr; Retour au Budget Mensuel
+                </a>
+            </div>
+
+            <div class="lg:col-span-8 space-y-4">
+                <div class="flex justify-between items-center border-b-2 border-gray-300 pb-1">
+                
+                    <h2 class="italic font-bold text-gray-600">Listes Enveloppes</h2>
+                    <button @click="showAddModal = true" class="bg-gray-800 text-white px-3 py-1 rounded-full text-xs font-black hover:bg-black transition">
+                        + AJOUTER
+                    </button>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50 text-gray-400 text-xs uppercase tracking-widest border-b border-gray-200">
+                                <th class="px-6 py-3 font-black">Libellé</th>
+                                <th class="px-6 py-3 font-black text-right">Montant</th>
+                                <th class="px-6 py-3 font-black">Notes</th>
+                                <th class="px-6 py-3 font-black text-right">Actions</th> 
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            {% for env in envelopes %}
+                            <tr class="hover:bg-purple-50 transition-colors group">
+                                <td class="px-6 py-4 font-bold text-gray-700">{{ env.name }}</td>
+                                <td class="px-6 py-4 text-right font-mono font-bold {% if env.amount < 0 %}text-red-500{% else %}text-gray-900{% endif %}">
+                                    {{ env.amount|floatformat:2 }} €
+                                </td>
+                                <td class="px-6 py-4 text-xs text-gray-400 italic">
+                                    {{ env.comment|default:"" }}
+                                </td>
+                                <td class="px-6 py-4 text-right space-x-2">
+                                    
+                                    <button @click="
+                                        editEnvId = '{{ env.id }}';
+                                        editEnvName = '{{ env.name|escapejs }}';
+                                        editEnvAmount = '{{ env.amount|stringformat:'f' }}';
+                                        editEnvComment = '{{ env.comment|escapejs }}';
+                                        showEditModal = true;
+                                    " class="text-blue-400 hover:text-blue-700 transition">
+                                        <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                    </button>
+                                    
+                                    <form method="POST" action="{% url 'moneymanager:delete_global_envelope' owner.name|lower env.id %}" class="inline" onsubmit="return confirm('Supprimer cette enveloppe ?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="text-red-300 hover:text-red-600 transition">
+                                            <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="px-6 py-10 text-center text-gray-400 italic">
+                                    Aucune enveloppe créée pour le moment.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="bg-gray-100 font-black border-t-2 border-gray-300">
+                            <tr>
+                                <td class="px-6 py-4 text-right uppercase text-sm text-gray-500">Total =></td>
+                                <td class="px-6 py-4 text-right font-mono text-lg">{{ total_allocated|floatformat:2 }} €</td>
+                                <td colspan="2"></td> 
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div class="flex flex-col items-end pt-6">
+                    <div class="flex items-center gap-6">
+                        <span class="text-xl font-black text-gray-400 uppercase tracking-tighter">B/C -></span>
+                        <div class="bg-white border-4 border-black px-10 py-4 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+                            <span class="text-3xl font-mono font-black {% if remainder >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                                {{ remainder|floatformat:2 }} €
+                            </span>
+                        </div>
+                    </div>
+                    <p class="mt-4 text-xs text-gray-400 italic text-right max-w-xs">
+                        Le B/C représente l'argent "libre" sur vos comptes qui n'a pas encore été affecté à une enveloppe spécifique.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <!-- Modal d'ajout d'enveloppe -->
+         <div x-show="showAddModal" style="display: none;" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+            <div @click.away="showAddModal = false" class="bg-white rounded-lg shadow-2xl max-w-md w-full overflow-hidden border-t-4 border-gray-800">
+                <form method="POST" action="{% url 'moneymanager:add_global_envelope' owner.name|lower %}" class="p-6 space-y-4">
+                    {% csrf_token %}
+                    <h3 class="text-xl font-black uppercase italic tracking-tighter">Nouvelle Enveloppe</h3>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Nom de l'enveloppe</label>
+                        <input type="text" name="name" required placeholder="Ex: Sécurité, Travaux..." class="w-full border-gray-300 rounded-lg shadow-sm focus:border-black focus:ring-black">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Montant initial</label>
+                        <input type="number" step="0.01" name="amount" required placeholder="0.00" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-black focus:ring-black">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Note / Commentaire</label>
+                        <input type="text" name="comment" placeholder="Ex: RTX, Optionnel..." class="w-full border-gray-300 rounded-lg shadow-sm focus:border-black focus:ring-black">
+                    </div>
+
+                    <div class="flex gap-3 pt-4">
+                        <button type="button" @click="showAddModal = false" class="flex-1 py-3 text-gray-500 font-bold hover:bg-gray-100 rounded-lg transition">Annuler</button>
+                        <button type="submit" class="flex-1 py-3 bg-black text-white font-bold rounded-lg shadow-lg hover:bg-gray-800 transition">Créer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div x-show="showBalanceModal" style="display: none;" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+            <div @click.away="showBalanceModal = false" class="bg-white rounded-lg shadow-2xl max-w-sm w-full overflow-hidden border-t-4 border-gray-800">
+                <form method="POST" action="{% url 'moneymanager:update_account_balance' owner.name|lower %}" class="p-6 space-y-4">
+                    {% csrf_token %}
+                    <h3 class="text-xl font-black uppercase italic tracking-tighter">Actualiser le Solde</h3>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Argent réel cumulé</label>
+                        <input type="number" step="0.01" name="balance" value="{{ total_cash|stringformat:'f' }}" required class="w-full border-gray-300 rounded-lg shadow-sm focus:border-black focus:ring-black font-mono text-lg text-right">
+                    </div>
+
+                    <div class="flex gap-3 pt-4">
+                        <button type="button" @click="showBalanceModal = false" class="flex-1 py-3 text-gray-500 font-bold hover:bg-gray-100 rounded-lg transition">Annuler</button>
+                        <button type="submit" class="flex-1 py-3 bg-black text-white font-bold rounded-lg shadow-lg hover:bg-gray-800 transition">Sauvegarder</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div x-show="showEditModal" style="display: none;" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+            <div @click.away="showEditModal = false" class="bg-white rounded-lg shadow-2xl max-w-md w-full overflow-hidden border-t-4 border-blue-600">
+                <form method="POST" :action="'/wealth/{{ owner.name|lower }}/edit-envelope/' + editEnvId + '/'" class="p-6 space-y-4">
+                    {% csrf_token %}
+                    <h3 class="text-xl font-black uppercase italic tracking-tighter text-blue-600">Modifier l'Enveloppe</h3>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Nom</label>
+                        <input type="text" name="name" x-model="editEnvName" required class="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-600 focus:ring-blue-600">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Montant</label>
+                        <input type="number" step="0.01" name="amount" x-model="editEnvAmount" required class="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-600 focus:ring-blue-600">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Note / Commentaire</label>
+                        <input type="text" name="comment" x-model="editEnvComment" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-600 focus:ring-blue-600">
+                    </div>
+
+                    <div class="flex gap-3 pt-4">
+                        <button type="button" @click="showEditModal = false" class="flex-1 py-3 text-gray-500 font-bold hover:bg-gray-100 rounded-lg transition">Annuler</button>
+                        <button type="submit" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-lg shadow-lg hover:bg-blue-700 transition">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
