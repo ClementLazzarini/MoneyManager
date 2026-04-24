@@ -1,6 +1,5 @@
 from django.shortcuts import redirect, render, get_object_or_404
 from django.db.models import Sum
-from django.urls import reverse
 from decimal import Decimal
 import time
 from datetime import datetime
@@ -137,16 +136,22 @@ def process_transaction(request):
             link.envelope.save()
 
         year, month, _ = custom_date.split('-')
-        return redirect('moneymanager:dashboard', owner_name=transaction.owner.name.lower(), year=int(year), month=int(month))
+
+        safe_owner_name = transaction.owner.name.lower() if transaction.owner else 'inconnu'
+
+        return redirect('moneymanager:dashboard', owner_name=safe_owner_name, year=int(year), month=int(month))
+    
+    return redirect('/')
     
 
 def cancel_transaction(request, transaction_id):
     if request.method == 'POST':
         transaction = get_object_or_404(Transaction, id=transaction_id)
-        owner_name = transaction.owner.name.lower()
+        safe_owner_name = transaction.owner.name.lower() if transaction.owner else 'inconnu'
+        owner_name = safe_owner_name
         year = transaction.custom_date.year
         month = transaction.custom_date.month
-        category_id = transaction.category.id if transaction.category else None
+        category_id = transaction.category.pk if transaction.category else None
 
         # --- ANNULATION DE L'IMPACT SUR L'ENVELOPPE ---
         if transaction.category:
@@ -237,6 +242,8 @@ def add_global_envelope(request, owner_name):
         )
         
         return redirect('moneymanager:wealth_dashboard', owner_name=owner_name)
+    
+    return redirect('moneymanager:wealth_dashboard', owner_name=owner_name)
 
 
 def update_account_balance(request, owner_name):
@@ -250,6 +257,8 @@ def update_account_balance(request, owner_name):
         balance_obj.save()
         
         return redirect('moneymanager:wealth_dashboard', owner_name=owner_name)
+    
+    return redirect('moneymanager:wealth_dashboard', owner_name=owner_name)
 
 
 def edit_global_envelope(request, owner_name, envelope_id):
@@ -260,6 +269,8 @@ def edit_global_envelope(request, owner_name, envelope_id):
         envelope.comment = request.POST.get('comment')
         envelope.save()
         return redirect('moneymanager:wealth_dashboard', owner_name=owner_name)
+    
+    return redirect('moneymanager:wealth_dashboard', owner_name=owner_name)
 
 
 def delete_global_envelope(request, owner_name, envelope_id):
@@ -267,6 +278,7 @@ def delete_global_envelope(request, owner_name, envelope_id):
         envelope = get_object_or_404(GlobalEnvelope, id=envelope_id, owner__name__iexact=owner_name)
         envelope.delete()
     return redirect('moneymanager:wealth_dashboard', owner_name=owner_name)
+
 
 
 def add_manual_transaction(request, owner_name):
