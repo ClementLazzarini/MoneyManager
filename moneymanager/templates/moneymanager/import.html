@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% load tailwind_tags %}
+
+{% block title %}Importation CSV - {{ owner.name }}{% endblock title %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto mt-10">
+    <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
+        <div class="bg-blue-600 p-8 text-white">
+            <h1 class="text-3xl font-black uppercase tracking-tighter italic">Importation BoursoBank</h1>
+            <p class="text-blue-100 mt-2">Glissez votre relevé CSV pour synchroniser vos comptes.</p>
+        </div>
+
+        <form method="POST" action="{% url 'moneymanager:import_csv_action' owner.name|lower %}" enctype="multipart/form-data" class="p-10 space-y-6">
+            {% csrf_token %}
+            
+            <div x-data="{ dragging: false }" 
+                 @dragover.prevent="dragging = true" 
+                 @dragleave.prevent="dragging = false" 
+                 @drop.prevent="dragging = false"
+                 :class="dragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 bg-gray-50'"
+                 class="border-4 border-dashed rounded-3xl p-12 text-center transition-all">
+                
+                <svg class="mx-auto h-16 w-16 text-blue-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+
+                <label class="cursor-pointer group">
+                    <span class="bg-blue-600 text-white px-6 py-3 rounded-full font-bold group-hover:bg-blue-700 transition shadow-lg">
+                        Choisir le fichier CSV
+                    </span>
+                    <input type="file" name="csv_file" accept=".csv" class="hidden" required @change="$el.closest('form').submit()">
+                </label>
+                
+                <p class="text-gray-400 mt-6 text-sm font-medium italic">Format supporté : Point-virgule (;) / UTF-8 ou Latin-1</p>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock content %}

@@ -2,6 +2,8 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.db.models import Sum
 from decimal import Decimal
 import time
+import csv
+import hashlib
 from datetime import datetime
 from .models import Transaction, Owner, Category, MonthlyBudget, DefaultBudget, AccountBalance, GlobalEnvelope, CategoryEnvelopeLink
 
@@ -280,7 +282,6 @@ def delete_global_envelope(request, owner_name, envelope_id):
     return redirect('moneymanager:wealth_dashboard', owner_name=owner_name)
 
 
-
 def add_manual_transaction(request, owner_name):
     if request.method == 'POST':
         owner = get_object_or_404(Owner, name__iexact=owner_name)
@@ -327,3 +328,69 @@ def add_manual_transaction(request, owner_name):
         return redirect('moneymanager:dashboard', owner_name=owner_name, year=int(year), month=int(month))
         
     return redirect('moneymanager:dashboard', owner_name=owner_name, year=datetime.now().year, month=datetime.now().month)
+
+
+def import_page(request, owner_name):
+    """Affiche la page d'importation"""
+    owner = get_object_or_404(Owner, name__iexact=owner_name)
+    now = datetime.now()
+    
+    context = {
+        'owner': owner,
+        'year': now.year,
+        'month': now.month,
+    }
+    return render(request, 'moneymanager/import.html', context)
+
+def import_csv_action(request, owner_name):
+    """Traite le fichier CSV uploadé"""
+    if request.method == 'POST' and request.FILES.get('csv_file'):
+        owner = get_object_or_404(Owner, name__iexact=owner_name)
+        csv_file = request.FILES['csv_file']
+        
+        # Lecture du fichier
+        try:
+            decoded_file = csv_file.read().decode('utf-8-sig').splitlines()
+        except UnicodeDecodeError:
+            csv_file.seek(0)
+            decoded_file = csv_file.read().decode('latin-1').splitlines()
+            
+        reader = csv.DictReader(decoded_file, delimiter=';')
+        
+        count_added = 0
+        for row in reader:
+            date_str = row.get('dateOp')
+            label = row.get('label', '')
+            amount_raw = row.get('amount', '0')
+            
+            if not date_str or not amount_raw:
+                continue
+
+            # Nettoyage du montant (Bourso utilise la virgule et des espaces)
+            amount_str = amount_raw.replace(',', '.').replace(' ', '')
+            amount = Decimal(amount_str)
+
+            # Calcul du hash unique (identique à ton script import_csv.py)
+            unique_string = f"{date_str}_{label}_{amount}"
+            bank_ref = hashlib.md5(unique_string.encode('utf-8')).hexdigest()
+
+            # Création si n'existe pas
+            if not Transaction.objects.filter(bank_reference=bank_ref).exists():
+                Transaction.objects.create(
+                    owner=owner,
+                    bank_reference=bank_ref,
+                    bank_date=date_str,
+                    bank_label=label[:255],
+                    bank_category=row.get('category', '')[:100],
+                    bank_amount=amount,
+                    custom_date=date_str,
+                    custom_amount=amount,
+                    is_processed=False
+                )
+                count_added += 1
+                
+        # Redirection vers le dashboard avec un petit message de succès par exemple
+        now = datetime.now()
+        return redirect('moneymanager:dashboard', owner_name=owner.name.lower(), year=now.year, month=now.month)
+    
+    return redirect('moneymanager:import_page', owner_name=owner_name)
