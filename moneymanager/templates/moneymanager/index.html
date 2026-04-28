@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% load tailwind_tags %}
+
+
+{% block title %}Bienvenue - MoneyManager{% endblock title %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-12 px-4">
+    <div class="text-center mb-16">
+        <h1 class="text-5xl font-black text-gray-900 tracking-tighter italic uppercase">
+            Money<span class="text-purple-600">Manager</span>
+        </h1>
+        <p class="text-gray-500 mt-4 text-lg font-medium">Bienvenue dans l'interface de gestion de la famille.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {% for o in owners %}
+            <a href="{% url 'moneymanager:dashboard' o.name|lower year month %}" 
+               class="group relative bg-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-2 border border-gray-100 overflow-hidden">
+                
+                <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <svg class="w-24 h-24 text-purple-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>
+                </div>
+
+                <div class="relative z-10">
+                    <h2 class="text-3xl font-black text-gray-800 group-hover:text-purple-600 transition-colors uppercase italic">{{ o.name }}</h2>
+                    <p class="text-gray-400 mt-2 font-medium">Accéder au budget mensuel et au patrimoine.</p>
+                    
+                    <div class="mt-8 flex items-center text-purple-600 font-bold text-sm uppercase tracking-widest">
+                        Entrer dans l'espace
+                        <svg class="w-5 h-5 ml-2 group-hover:translate-x-2 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                    </div>
+                </div>
+            </a>
+        {% empty %}
+            <div class="col-span-2 text-center p-12 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
+                <p class="text-gray-500">Aucun profil trouvé. Créez un Owner dans l'admin pour commencer.</p>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock content %}

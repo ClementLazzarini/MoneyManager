@@ -4,6 +4,8 @@ from . import views
 app_name = 'moneymanager'
 
 urlpatterns = [
+    path('', views.index, name='index'),
+    
     # DASHBOARD
     path('dashboard/<str:owner_name>/<int:year>/<int:month>/', views.dashboard, name='dashboard'),
     path('dashboard/<str:owner_name>/<int:year>/<int:month>/category/<int:category_id>/', views.category_detail, name='category_detail'),

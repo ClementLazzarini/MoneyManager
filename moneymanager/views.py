@@ -7,6 +7,20 @@ import hashlib
 from datetime import datetime
 from .models import Transaction, Owner, Category, MonthlyBudget, DefaultBudget, AccountBalance, GlobalEnvelope, CategoryEnvelopeLink
 
+def index(request):
+    """Page d'accueil racine permettant de choisir un propriétaire."""
+    owners = Owner.objects.all()
+    
+    now = datetime.now()
+    
+    context = {
+        'owners': owners,
+        'year': now.year,
+        'month': now.month,
+    }
+    return render(request, 'moneymanager/index.html', context)
+
+
 def dashboard(request, owner_name, year, month):
     owner = get_object_or_404(Owner, name__iexact=owner_name)
 

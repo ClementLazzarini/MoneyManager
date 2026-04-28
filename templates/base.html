@@ -15,26 +15,28 @@
             <div class="flex items-center justify-between h-16">
                 
                 <div class="flex items-center">
-                    <a href="#" class="flex-shrink-0 font-black text-xl tracking-widest text-purple-400 hover:text-purple-300 transition">
+                    <a href="{% url 'moneymanager:index' %}" class="flex-shrink-0 font-black text-xl tracking-widest text-purple-400 hover:text-purple-300 transition">
                         💸 MONEY<span class="text-white">MANAGER</span>
                     </a>
                 </div>
 
                 <div class="hidden md:block">
                     <div class="ml-10 flex items-baseline space-x-4">
-                        <a href="{% url 'moneymanager:dashboard' owner.name|lower year month %}" 
-                           class="hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium transition-colors {% if request.resolver_match.url_name == 'dashboard' %}bg-gray-800 text-purple-400{% endif %}">
-                            📊 Budget Mensuel
-                        </a>
-                        
-                        <a href="{% url 'moneymanager:wealth_dashboard' owner.name|lower %}" 
-                           class="hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium transition-colors {% if request.resolver_match.url_name == 'wealth_dashboard' %}bg-gray-800 text-purple-400{% endif %}">
-                            🏦 Dispatch Patrimoine
-                        </a>
-                        <a href="{% url 'moneymanager:import_page' owner.name|lower %}" 
-                            class="hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium transition-colors {% if request.resolver_match.url_name == 'import_page' %}bg-gray-800 text-blue-400 border-b-2 border-blue-400{% endif %}">
-                                📥 Importer CSV
-                        </a>
+                        {% if owner %}
+                            <a href="{% url 'moneymanager:dashboard' owner.name|lower year month %}" 
+                            class="hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium transition-colors {% if request.resolver_match.url_name == 'dashboard' %}bg-gray-800 text-purple-400{% endif %}">
+                                📊 Budget Mensuel
+                            </a>
+                            
+                            <a href="{% url 'moneymanager:wealth_dashboard' owner.name|lower %}" 
+                            class="hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium transition-colors {% if request.resolver_match.url_name == 'wealth_dashboard' %}bg-gray-800 text-purple-400{% endif %}">
+                                🏦 Dispatch Patrimoine
+                            </a>
+                            <a href="{% url 'moneymanager:import_page' owner.name|lower %}" 
+                                class="hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium transition-colors {% if request.resolver_match.url_name == 'import_page' %}bg-gray-800 text-blue-400 border-b-2 border-blue-400{% endif %}">
+                                    📥 Importer CSV
+                            </a>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -54,10 +56,11 @@
 
         <div x-show="mobileMenuOpen" style="display: none;" class="md:hidden bg-gray-800">
             <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-                <a href="{% url 'moneymanager:dashboard' owner.name|lower year month %}" class="hover:bg-gray-700 block px-3 py-2 rounded-md text-base font-medium">📊 Budget Mensuel</a>
-                <a href="{% url 'moneymanager:wealth_dashboard' owner.name|lower %}" class="hover:bg-gray-700 block px-3 py-2 rounded-md text-base font-medium">🏦 Dispatch Patrimoine</a>
-                <a href="{% url 'moneymanager:import_page' owner.name|lower %}" class="hover:bg-gray-700 block px-3 py-2 rounded-md text-base font-medium">📥 Importer CSV</a>
-                
+                {% if owner %}
+                    <a href="{% url 'moneymanager:dashboard' owner.name|lower year month %}" class="hover:bg-gray-700 block px-3 py-2 rounded-md text-base font-medium">📊 Budget Mensuel</a>
+                    <a href="{% url 'moneymanager:wealth_dashboard' owner.name|lower %}" class="hover:bg-gray-700 block px-3 py-2 rounded-md text-base font-medium">🏦 Dispatch Patrimoine</a>
+                    <a href="{% url 'moneymanager:import_page' owner.name|lower %}" class="hover:bg-gray-700 block px-3 py-2 rounded-md text-base font-medium">📥 Importer CSV</a>
+                {% endif %}
             </div>
         </div>
     </nav>
@@ -68,7 +71,7 @@
     </main>
 
     <footer class="bg-gray-900 text-gray-500 text-center py-4 text-xs mt-auto">
-        &copy; {% now "Y" %} MoneyManager - Développé par {{ owner.name }}
+        &copy; {% now "Y" %} MoneyManager - Développé par Clément Lazzarini
     </footer>
 
 </body>
