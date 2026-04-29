@@ -6,9 +6,15 @@ class Category(models.Model):
     Vos propres catégories ou enveloppes.
     """
     name = models.CharField(max_length=100)
+    icon = models.CharField(max_length=5, default="📁", help_text="Émoji pour identifier la catégorie")
+    color_code = models.CharField(
+        max_length=20, 
+        default="purple", 
+        help_text="Couleur de base (ex: blue, green, red, yellow, pink, indigo)"
+    )
 
     def __str__(self):
-        return self.name
+        return f"{self.icon} {self.name}"
     
 
 class Owner(models.Model):

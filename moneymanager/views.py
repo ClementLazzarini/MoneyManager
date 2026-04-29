@@ -91,6 +91,22 @@ def dashboard(request, owner_name, year, month):
             'linked_env': link.envelope.name if link else None,
         })
 
+        processed_tx = Transaction.objects.filter(
+        owner=owner,
+        is_processed=True,
+        custom_date__year=year,
+        custom_date__month=month
+    )
+        # 1. Total des Entrées (Somme de toutes les rentrées d'argent > 0)
+    total_income = processed_tx.filter(custom_amount__gt=0).aggregate(Sum('custom_amount'))['custom_amount__sum'] or Decimal('0.00')
+    
+    # 2. Total des Sorties (Somme de toutes les dépenses < 0)
+    total_expenses_raw = processed_tx.filter(custom_amount__lt=0).aggregate(Sum('custom_amount'))['custom_amount__sum'] or Decimal('0.00')
+    total_expenses = abs(total_expenses_raw) # On le met en positif pour l'affichage visuel
+    
+    # 3. Capacité d'épargne (Reste à vivre / Bilan)
+    savings_capacity = total_income - total_expenses
+
     context = {
         'owner': owner,
         'year': year, 
@@ -102,6 +118,9 @@ def dashboard(request, owner_name, year, month):
         'next_y': next_year, 
         'unprocessed': unprocessed,
         'stats': stats,
+        'total_income': total_income,
+        'total_expenses': total_expenses,
+        'savings_capacity': savings_capacity,
         'categories_list': Category.objects.all(),
     }
     return render(request, 'moneymanager/dashboard.html', context)

@@ -31,7 +31,7 @@
                         </div>
                         <div class="flex items-center gap-4">
                             <span class="text-lg font-bold {% if tx.custom_amount < 0 %}text-red-500{% else %}text-green-600{% endif %}">
-                                {{ tx.custom_amount }} €
+                                {{ tx.custom_amount|floatformat:2 }} €
                             </span>
                             <form method="POST" action="{% url 'moneymanager:cancel_transaction' tx.id %}">
                                 {% csrf_token %}

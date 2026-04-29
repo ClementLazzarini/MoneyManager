@@ -35,41 +35,67 @@
             
         </div>
 
-        <div class="bg-white shadow-lg rounded-b-lg overflow-hidden border-x border-b border-gray-300">
-            <div class="grid grid-cols-5 bg-gray-200 border-b border-gray-300 font-bold text-center text-xs md:text-sm py-2">
-                <div class="border-r border-gray-300">Libellé</div>
-                <div class="border-r border-gray-300 bg-blue-50">Prévu</div>
-                <div class="border-r border-gray-300 bg-red-50">Coût Réel</div>
-                <div class="border-r border-gray-300 bg-purple-50">Delta</div>
-                <div class="bg-green-50">Gain Réel</div>
-            </div>
-
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8 mt-4">
             {% for item in stats %}
-            <div class="grid grid-cols-5 border-b border-gray-200 text-sm hover:bg-gray-50 transition">
-                <div class="p-2 border-r border-gray-200 font-medium truncate flex items-center gap-2 justify-between pr-4">
-                    <a href="{% url 'moneymanager:category_detail' owner.name|lower year month item.category.id %}" class="text-purple-600 hover:text-purple-800 hover:underline">
-                        {{ item.category.name }}
-                    </a>
-                    
-                    {% if item.linked_env %}
-                        <span title="Lié à l'enveloppe : {{ item.linked_env }}" class="bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold border border-gray-200">
-                            🔗 {{ item.linked_env }}
+            <div class="bg-white rounded-2xl p-3 shadow-sm border border-gray-100 flex items-center justify-between transition-all active:scale-95">
+                
+                <div class="flex items-center gap-3 overflow-hidden">
+                    <div class="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-xl bg-{{ item.category.color_code }}-50 text-{{ item.category.color_code }}-600 border border-{{ item.category.color_code }}-100">
+                        {{ item.category.icon }}
+                    </div>
+                    <div class="truncate">
+                        <a href="{% url 'moneymanager:category_detail' owner.name|lower year month item.category.id %}" 
+                           class="font-extrabold text-gray-800 hover:text-purple-600 text-sm block truncate">
+                            {{ item.category.name }}
+                        </a>
+                        {% if item.linked_env %}
+                            <span class="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">
+                                🔗 {{ item.linked_env }}
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="text-right shrink-0 ml-2">
+                    <div class="flex flex-col">
+                        <span class="text-lg font-black {% if item.delta >= 0 %}text-green-500{% else %}text-red-500{% endif %}">
+                            {{ item.delta|floatformat:2 }}<span class="text-[10px] ml-0.5">€</span>
                         </span>
-                    {% endif %}
+                        <div class="flex items-center justify-end gap-2 text-[10px] font-bold text-gray-400">
+                            <span>{{ item.real_cost|floatformat:2 }}</span>
+                            <span class="text-gray-300">/</span>
+                            <span>{{ item.target|floatformat:2 }}</span>
+                        </div>
+                    </div>
                 </div>
                 
-                <div class="p-2 border-r border-gray-200 text-right text-blue-600 flex items-center justify-end">{{ item.target|floatformat:2 }} €</div>
-                
-                <div class="p-2 border-r border-gray-200 text-right text-red-600 flex items-center justify-end">{{ item.real_cost|floatformat:2 }} €</div>
-                
-                <div class="p-2 border-r border-gray-200 text-right font-bold flex items-center justify-end {% if item.delta >= 0 %}text-green-500{% else %}text-red-600{% endif %}">
-                    {{ item.delta|floatformat:2 }} €
-                </div>
-                
-                <div class="p-2 text-right text-green-600 flex items-center justify-end">{{ item.real_gain|floatformat:2 }} €</div>
             </div>
             {% endfor %}
         </div>
+
+        <div class="mt-4 bg-gray-900 rounded-2xl p-4 shadow-lg border border-gray-800">
+            <div class="flex items-center justify-between gap-2">
+                
+                <div class="flex flex-col items-center flex-1 border-r border-gray-700 px-1">
+                    <span class="text-[9px] font-black text-gray-500 uppercase tracking-tighter mb-1">Entrées</span>
+                    <span class="text-sm font-bold text-green-400">{{ total_income|floatformat:2 }}<span class="text-[8px] ml-0.5">€</span></span>
+                </div>
+
+                <div class="flex flex-col items-center flex-1 border-r border-gray-700 px-1">
+                    <span class="text-[9px] font-black text-gray-500 uppercase tracking-tighter mb-1">Sorties</span>
+                    <span class="text-sm font-bold text-red-400">{{ total_expenses|floatformat:2 }}<span class="text-[8px] ml-0.5">€</span></span>
+                </div>
+
+                <div class="flex flex-col items-center flex-1 px-1">
+                    <span class="text-[9px] font-black text-gray-400 uppercase tracking-tighter mb-1">Bilan</span>
+                    <span class="text-base font-black {% if savings_capacity >= 0 %}text-purple-400{% else %}text-red-400{% endif %}">
+                        {{ savings_capacity|floatformat:2 }}<span class="text-[9px] ml-0.5">€</span>
+                    </span>
+                </div>
+
+            </div>
+        </div>
+
 
         <div class="flex justify-end">
             <button @click="showManualModal = true" class="bg-gray-900 text-white font-bold py-2 px-4 rounded-lg shadow hover:bg-gray-800 transition flex items-center gap-2 text-sm">
@@ -94,7 +120,7 @@
                     </div>
                     <div class="flex items-center gap-6">
                         <span class="text-lg font-black {% if tx.custom_amount < 0 %}text-red-500{% else %}text-green-600{% endif %}">
-                            {{ tx.custom_amount }} €
+                            {{ tx.custom_amount|floatformat:2 }} €
                         </span>
                         <button 
                             @click="
