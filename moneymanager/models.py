@@ -1,5 +1,6 @@
 from django.db import models
 from decimal import Decimal
+from django.contrib.auth.models import User
 
 class Category(models.Model):
     """
@@ -18,6 +19,7 @@ class Category(models.Model):
     
 
 class Owner(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True, related_name='owner_profile')
     name = models.CharField(max_length=100, unique=True)
 
     def __str__(self):

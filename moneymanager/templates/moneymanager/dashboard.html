@@ -18,7 +18,7 @@
         
         <div class="bg-purple-600 text-white rounded-t-lg shadow-md flex justify-between items-center px-4 py-3">
     
-            <a href="{% url 'moneymanager:dashboard' owner.name|lower prev_y prev_m %}" 
+            <a href="{% url 'moneymanager:dashboard'  prev_y prev_m %}" 
             class="hover:bg-purple-700 p-2 rounded-full transition-colors flex items-center justify-center">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
             </a>
@@ -28,7 +28,7 @@
                 <p class="text-purple-200 text-sm font-medium uppercase tracking-widest">{{ month_name }} {{ year }}</p>
             </div>
 
-            <a href="{% url 'moneymanager:dashboard' owner.name|lower next_y next_m %}" 
+            <a href="{% url 'moneymanager:dashboard'  next_y next_m %}" 
             class="hover:bg-purple-700 p-2 rounded-full transition-colors flex items-center justify-center">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
             </a>
@@ -44,7 +44,7 @@
                         {{ item.category.icon }}
                     </div>
                     <div class="truncate">
-                        <a href="{% url 'moneymanager:category_detail' owner.name|lower year month item.category.id %}" 
+                        <a href="{% url 'moneymanager:category_detail'  year month item.category.id %}" 
                            class="font-extrabold text-gray-800 hover:text-purple-600 text-sm block truncate">
                             {{ item.category.name }}
                         </a>
@@ -217,7 +217,7 @@
                     </button>
                 </div>
                 
-                <form method="POST" action="{% url 'moneymanager:add_manual_transaction' owner.name|lower %}" class="p-6 space-y-4">
+                <form method="POST" action="{% url 'moneymanager:add_manual_transaction'  %}" class="p-6 space-y-4">
                     {% csrf_token %}
                     
                     <div>

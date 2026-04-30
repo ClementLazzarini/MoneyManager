@@ -1,5 +1,6 @@
 from django.shortcuts import redirect, render, get_object_or_404
 from django.db.models import Sum
+from django.contrib.auth.decorators import login_required
 from decimal import Decimal
 import time
 import csv
@@ -8,21 +9,23 @@ from datetime import datetime
 from .models import Transaction, Owner, Category, MonthlyBudget, DefaultBudget, AccountBalance, GlobalEnvelope, CategoryEnvelopeLink
 
 def index(request):
-    """Page d'accueil racine permettant de choisir un propriétaire."""
-    owners = Owner.objects.all()
-    
+    """Page d'accueil : Affiche le portail avec le bon contexte."""
     now = datetime.now()
-    
     context = {
-        'owners': owners,
         'year': now.year,
         'month': now.month,
     }
+    
+    if request.user.is_authenticated:
+        if hasattr(request.user, 'owner_profile'):
+            context['owner'] = request.user.owner_profile
+            
     return render(request, 'moneymanager/index.html', context)
 
 
-def dashboard(request, owner_name, year, month):
-    owner = get_object_or_404(Owner, name__iexact=owner_name)
+@login_required
+def dashboard(request, year, month):
+    owner = request.user.owner_profile
 
     if month == 1:
         prev_month, prev_year = 12, year - 1
@@ -126,6 +129,7 @@ def dashboard(request, owner_name, year, month):
     return render(request, 'moneymanager/dashboard.html', context)
 
 
+@login_required
 def process_transaction(request):
     if request.method == 'POST':
         tx_id = request.POST.get('transaction_id')
@@ -172,18 +176,15 @@ def process_transaction(request):
 
         year, month, _ = custom_date.split('-')
 
-        safe_owner_name = transaction.owner.name.lower() if transaction.owner else 'inconnu'
-
-        return redirect('moneymanager:dashboard', owner_name=safe_owner_name, year=int(year), month=int(month))
+        return redirect('moneymanager:dashboard', year=int(year), month=int(month))
     
     return redirect('/')
     
 
+@login_required
 def cancel_transaction(request, transaction_id):
     if request.method == 'POST':
         transaction = get_object_or_404(Transaction, id=transaction_id)
-        safe_owner_name = transaction.owner.name.lower() if transaction.owner else 'inconnu'
-        owner_name = safe_owner_name
         year = transaction.custom_date.year
         month = transaction.custom_date.month
         category_id = transaction.category.pk if transaction.category else None
@@ -203,13 +204,16 @@ def cancel_transaction(request, transaction_id):
         transaction.save()
 
         if category_id:
-            return redirect('moneymanager:category_detail', owner_name=owner_name, year=year, month=month, category_id=category_id)
+            return redirect('moneymanager:category_detail', year=year, month=month, category_id=category_id)
+    
+    now = datetime.now()
             
-    return redirect('moneymanager:dashboard')
+    return redirect('moneymanager:dashboard', year=now.year, month=now.month)
 
 
-def category_detail(request, owner_name, year, month, category_id):
-    owner = get_object_or_404(Owner, name__iexact=owner_name)
+@login_required
+def category_detail(request, year, month, category_id):
+    owner = request.user.owner_profile
     category = get_object_or_404(Category, id=category_id)
 
     # On récupère les transactions de cette enveloppe pour ce mois
@@ -231,8 +235,9 @@ def category_detail(request, owner_name, year, month, category_id):
     return render(request, 'moneymanager/category_detail.html', context)
 
 
-def wealth_dashboard(request, owner_name):
-    owner = get_object_or_404(Owner, name__iexact=owner_name)
+@login_required
+def wealth_dashboard(request):
+    owner = request.user.owner_profile
 
     now = datetime.now()
     
@@ -259,9 +264,10 @@ def wealth_dashboard(request, owner_name):
     return render(request, 'moneymanager/wealth_dashboard.html', context)
 
 
-def add_global_envelope(request, owner_name):
+@login_required
+def add_global_envelope(request):
     if request.method == 'POST':
-        owner = get_object_or_404(Owner, name__iexact=owner_name)
+        owner = request.user.owner_profile
         
         # Récupération des données du formulaire
         name = request.POST.get('name')
@@ -276,14 +282,15 @@ def add_global_envelope(request, owner_name):
             comment=comment
         )
         
-        return redirect('moneymanager:wealth_dashboard', owner_name=owner_name)
+        return redirect('moneymanager:wealth_dashboard')
     
-    return redirect('moneymanager:wealth_dashboard', owner_name=owner_name)
+    return redirect('moneymanager:wealth_dashboard')
 
 
-def update_account_balance(request, owner_name):
+@login_required
+def update_account_balance(request):
     if request.method == 'POST':
-        owner = get_object_or_404(Owner, name__iexact=owner_name)
+        owner = request.user.owner_profile
         new_balance = request.POST.get('balance', 0)
         
         # On récupère l'objet (ou on le crée s'il n'existe pas) et on met à jour
@@ -291,33 +298,38 @@ def update_account_balance(request, owner_name):
         balance_obj.balance = new_balance
         balance_obj.save()
         
-        return redirect('moneymanager:wealth_dashboard', owner_name=owner_name)
+        return redirect('moneymanager:wealth_dashboard')
     
-    return redirect('moneymanager:wealth_dashboard', owner_name=owner_name)
+    return redirect('moneymanager:wealth_dashboard')
 
 
-def edit_global_envelope(request, owner_name, envelope_id):
+@login_required
+def edit_global_envelope(request, envelope_id):
     if request.method == 'POST':
-        envelope = get_object_or_404(GlobalEnvelope, id=envelope_id, owner__name__iexact=owner_name)
+        owner = request.user.owner_profile
+        envelope = get_object_or_404(GlobalEnvelope, id=envelope_id, owner=owner)
         envelope.name = request.POST.get('name')
         envelope.amount = request.POST.get('amount')
         envelope.comment = request.POST.get('comment')
         envelope.save()
-        return redirect('moneymanager:wealth_dashboard', owner_name=owner_name)
+        return redirect('moneymanager:wealth_dashboard')
     
-    return redirect('moneymanager:wealth_dashboard', owner_name=owner_name)
+    return redirect('moneymanager:wealth_dashboard')
 
 
-def delete_global_envelope(request, owner_name, envelope_id):
+@login_required
+def delete_global_envelope(request, envelope_id):
     if request.method == 'POST':
-        envelope = get_object_or_404(GlobalEnvelope, id=envelope_id, owner__name__iexact=owner_name)
+        owner = request.user.owner_profile
+        envelope = get_object_or_404(GlobalEnvelope, id=envelope_id, owner=owner)
         envelope.delete()
-    return redirect('moneymanager:wealth_dashboard', owner_name=owner_name)
+    return redirect('moneymanager:wealth_dashboard')
 
 
-def add_manual_transaction(request, owner_name):
+@login_required
+def add_manual_transaction(request):
     if request.method == 'POST':
-        owner = get_object_or_404(Owner, name__iexact=owner_name)
+        owner = request.user.owner_profile
         
         label = request.POST.get('label')
         amount_str = request.POST.get('amount')
@@ -326,7 +338,6 @@ def add_manual_transaction(request, owner_name):
         
         amount = Decimal(amount_str.replace(',', '.'))
         
-        # On crée une référence unique "MANUAL-..." pour simuler la banque
         unique_ref = f"MANUAL-{int(time.time())}"
         
         # 1. Création de la transaction
@@ -358,14 +369,15 @@ def add_manual_transaction(request, owner_name):
                 
         # 3. Redirection vers le mois de la dépense
         year, month, _ = date_str.split('-')
-        return redirect('moneymanager:dashboard', owner_name=owner_name, year=int(year), month=int(month))
+        return redirect('moneymanager:dashboard', year=int(year), month=int(month))
         
-    return redirect('moneymanager:dashboard', owner_name=owner_name, year=datetime.now().year, month=datetime.now().month)
+    return redirect('moneymanager:dashboard', year=datetime.now().year, month=datetime.now().month)
 
 
-def import_page(request, owner_name):
+@login_required
+def import_page(request):
     """Affiche la page d'importation"""
-    owner = get_object_or_404(Owner, name__iexact=owner_name)
+    owner = request.user.owner_profile
     now = datetime.now()
     
     context = {
@@ -375,10 +387,12 @@ def import_page(request, owner_name):
     }
     return render(request, 'moneymanager/import.html', context)
 
-def import_csv_action(request, owner_name):
+
+@login_required
+def import_csv_action(request):
     """Traite le fichier CSV uploadé"""
     if request.method == 'POST' and request.FILES.get('csv_file'):
-        owner = get_object_or_404(Owner, name__iexact=owner_name)
+        owner = request.user.owner_profile
         csv_file = request.FILES['csv_file']
         
         # Lecture du fichier
@@ -426,4 +440,4 @@ def import_csv_action(request, owner_name):
         now = datetime.now()
         return redirect('moneymanager:dashboard', owner_name=owner.name.lower(), year=now.year, month=now.month)
     
-    return redirect('moneymanager:import_page', owner_name=owner_name)
+    return redirect('moneymanager:import_page')

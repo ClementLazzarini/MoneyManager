@@ -11,7 +11,7 @@
             <p class="text-blue-100 mt-2">Glissez votre relevé CSV pour synchroniser vos comptes.</p>
         </div>
 
-        <form method="POST" action="{% url 'moneymanager:import_csv_action' owner.name|lower %}" enctype="multipart/form-data" class="p-10 space-y-6">
+        <form method="POST" action="{% url 'moneymanager:import_csv_action'  %}" enctype="multipart/form-data" class="p-10 space-y-6">
             {% csrf_token %}
             
             <div x-data="{ dragging: false }" 

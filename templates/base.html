@@ -23,19 +23,25 @@
                 <div class="hidden md:block">
                     <div class="ml-10 flex items-baseline space-x-4">
                         {% if owner %}
-                            <a href="{% url 'moneymanager:dashboard' owner.name|lower year month %}" 
+                            <a href="{% url 'moneymanager:dashboard'  year month %}" 
                             class="hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium transition-colors {% if request.resolver_match.url_name == 'dashboard' %}bg-gray-800 text-purple-400{% endif %}">
                                 📊 Budget Mensuel
                             </a>
                             
-                            <a href="{% url 'moneymanager:wealth_dashboard' owner.name|lower %}" 
+                            <a href="{% url 'moneymanager:wealth_dashboard'  %}" 
                             class="hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium transition-colors {% if request.resolver_match.url_name == 'wealth_dashboard' %}bg-gray-800 text-purple-400{% endif %}">
                                 🏦 Dispatch Patrimoine
                             </a>
-                            <a href="{% url 'moneymanager:import_page' owner.name|lower %}" 
+                            <a href="{% url 'moneymanager:import_page'  %}" 
                                 class="hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium transition-colors {% if request.resolver_match.url_name == 'import_page' %}bg-gray-800 text-blue-400 border-b-2 border-blue-400{% endif %}">
                                     📥 Importer CSV
                             </a>
+                            <form method="POST" action="{% url 'moneymanager:logout' %}" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" class="hover:bg-red-500 hover:text-white text-red-400 px-3 py-2 rounded-md text-sm font-bold transition-colors">
+                                    🚪 Quitter
+                                </button>
+                            </form>
                         {% endif %}
                     </div>
                 </div>
@@ -57,9 +63,15 @@
         <div x-show="mobileMenuOpen" style="display: none;" class="md:hidden bg-gray-800">
             <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
                 {% if owner %}
-                    <a href="{% url 'moneymanager:dashboard' owner.name|lower year month %}" class="hover:bg-gray-700 block px-3 py-2 rounded-md text-base font-medium">📊 Budget Mensuel</a>
-                    <a href="{% url 'moneymanager:wealth_dashboard' owner.name|lower %}" class="hover:bg-gray-700 block px-3 py-2 rounded-md text-base font-medium">🏦 Dispatch Patrimoine</a>
-                    <a href="{% url 'moneymanager:import_page' owner.name|lower %}" class="hover:bg-gray-700 block px-3 py-2 rounded-md text-base font-medium">📥 Importer CSV</a>
+                    <a href="{% url 'moneymanager:dashboard'  year month %}" class="hover:bg-gray-700 block px-3 py-2 rounded-md text-base font-medium">📊 Budget Mensuel</a>
+                    <a href="{% url 'moneymanager:wealth_dashboard'  %}" class="hover:bg-gray-700 block px-3 py-2 rounded-md text-base font-medium">🏦 Dispatch Patrimoine</a>
+                    <a href="{% url 'moneymanager:import_page'  %}" class="hover:bg-gray-700 block px-3 py-2 rounded-md text-base font-medium">📥 Importer CSV</a>
+                    <form method="POST" action="{% url 'moneymanager:logout' %}" class="w-full mt-2 border-t border-gray-700 pt-2">
+                        {% csrf_token %}
+                        <button type="submit" class="w-full text-left text-red-400 hover:bg-red-500 hover:text-white block px-3 py-2 rounded-md text-base font-bold transition">
+                            🚪 Se déconnecter
+                        </button>
+                    </form>
                 {% endif %}
             </div>
         </div>

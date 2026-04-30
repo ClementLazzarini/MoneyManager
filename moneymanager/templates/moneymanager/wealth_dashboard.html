@@ -88,7 +88,7 @@
                                         <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                                     </button>
                                     
-                                    <form method="POST" action="{% url 'moneymanager:delete_global_envelope' owner.name|lower env.id %}" class="inline" onsubmit="return confirm('Supprimer cette enveloppe ?');">
+                                    <form method="POST" action="{% url 'moneymanager:delete_global_envelope' env.id %}" class="inline" onsubmit="return confirm('Supprimer cette enveloppe ?');">
                                         {% csrf_token %}
                                         <button type="submit" class="text-red-300 hover:text-red-600 transition">
                                             <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
@@ -132,7 +132,7 @@
         <!-- Modal d'ajout d'enveloppe -->
          <div x-show="showAddModal" style="display: none;" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
             <div @click.away="showAddModal = false" class="bg-white rounded-lg shadow-2xl max-w-md w-full overflow-hidden border-t-4 border-gray-800">
-                <form method="POST" action="{% url 'moneymanager:add_global_envelope' owner.name|lower %}" class="p-6 space-y-4">
+                <form method="POST" action="{% url 'moneymanager:add_global_envelope' %}" class="p-6 space-y-4">
                     {% csrf_token %}
                     <h3 class="text-xl font-black uppercase italic tracking-tighter">Nouvelle Enveloppe</h3>
                     
@@ -160,7 +160,7 @@
         </div>
         <div x-show="showBalanceModal" style="display: none;" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
             <div @click.away="showBalanceModal = false" class="bg-white rounded-lg shadow-2xl max-w-sm w-full overflow-hidden border-t-4 border-gray-800">
-                <form method="POST" action="{% url 'moneymanager:update_account_balance' owner.name|lower %}" class="p-6 space-y-4">
+                <form method="POST" action="{% url 'moneymanager:update_account_balance' %}" class="p-6 space-y-4">
                     {% csrf_token %}
                     <h3 class="text-xl font-black uppercase italic tracking-tighter">Actualiser le Solde</h3>
                     
@@ -178,7 +178,7 @@
         </div>
         <div x-show="showEditModal" style="display: none;" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
             <div @click.away="showEditModal = false" class="bg-white rounded-lg shadow-2xl max-w-md w-full overflow-hidden border-t-4 border-blue-600">
-                <form method="POST" :action="'/wealth/{{ owner.name|lower }}/edit-envelope/' + editEnvId + '/'" class="p-6 space-y-4">
+                <form method="POST" :action="'/wealth/edit-envelope/' + editEnvId + '/'" class="p-6 space-y-4">
                     {% csrf_token %}
                     <h3 class="text-xl font-black uppercase italic tracking-tighter text-blue-600">Modifier l'Enveloppe</h3>
                     
