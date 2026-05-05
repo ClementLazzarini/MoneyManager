@@ -6,7 +6,7 @@ import time
 import csv
 import hashlib
 from datetime import datetime
-from .models import Transaction, Owner, Category, MonthlyBudget, DefaultBudget, AccountBalance, GlobalEnvelope, CategoryEnvelopeLink
+from .models import Transaction, Category, MonthlyBudget, DefaultBudget, AccountBalance, GlobalEnvelope, CategoryEnvelopeLink
 
 def index(request):
     """Page d'accueil : Affiche le portail avec le bon contexte."""

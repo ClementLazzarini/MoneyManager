@@ -25,8 +25,8 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
 
-                <label class="cursor-pointer group">
-                    <span class="bg-blue-600 text-white px-6 py-3 rounded-full font-bold group-hover:bg-blue-700 transition shadow-lg">
+                <label class="cursor-pointer group inline-block mt-4">
+                    <span class="inline-block bg-blue-600 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-sm group-hover:bg-blue-700 transition-all shadow-lg transform group-active:scale-95">
                         Choisir le fichier CSV
                     </span>
                     <input type="file" name="csv_file" accept=".csv" class="hidden" required @change="$el.closest('form').submit()">
