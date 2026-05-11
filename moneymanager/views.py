@@ -1,6 +1,7 @@
 from django.shortcuts import redirect, render, get_object_or_404
 from django.db.models import Sum
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from decimal import Decimal
 import time
 import csv
@@ -175,6 +176,8 @@ def process_transaction(request):
             link.envelope.save()
 
         year, month, _ = custom_date.split('-')
+
+        messages.success(request, "Opération classée avec succès !")
 
         return redirect('moneymanager:dashboard', year=int(year), month=int(month))
     
@@ -438,6 +441,9 @@ def import_csv_action(request):
                 
         # Redirection vers le dashboard avec un petit message de succès par exemple
         now = datetime.now()
+
+        messages.success(request, "Fichier importé !")
+
         return redirect('moneymanager:dashboard', owner_name=owner.name.lower(), year=now.year, month=now.month)
     
     return redirect('moneymanager:import_page')
