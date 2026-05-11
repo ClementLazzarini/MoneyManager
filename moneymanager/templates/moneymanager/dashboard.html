@@ -97,13 +97,6 @@
         </div>
 
 
-        <div class="flex justify-end">
-            <button @click="showManualModal = true" class="bg-gray-900 text-white font-bold py-2 px-4 rounded-lg shadow hover:bg-gray-800 transition flex items-center gap-2 text-sm">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                Saisie Manuelle
-            </button>
-        </div>
-
         <div class="mt-10" x-data="{ open: true }">
             <div @click="open = !open" class="cursor-pointer bg-orange-400 text-white px-4 py-3 rounded-t-lg flex justify-between items-center shadow-md">
                 <h2 class="font-bold uppercase tracking-wider">Transactions à traiter ({{ unprocessed.count }})</h2>
@@ -259,5 +252,11 @@
                 </form>
             </div>
         </div>
+        <button @click="showManualModal = true" 
+                class="fixed bottom-24 right-6 md:bottom-12 md:right-12 z-40 bg-gray-900 text-white w-14 h-14 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.3)] flex items-center justify-center hover:bg-black hover:scale-110 transition-all transform active:scale-95 group border border-gray-700">
+            <svg class="w-7 h-7 transform group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
+            </svg>
+        </button>
     </div>
 {% endblock content %}
