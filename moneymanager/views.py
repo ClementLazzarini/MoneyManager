@@ -28,6 +28,7 @@ def index(request):
 def dashboard(request, year, month):
     owner = request.user.owner_profile
 
+    # --- 1. GESTION DES DATES ---
     if month == 1:
         prev_month, prev_year = 12, year - 1
     else:
@@ -38,77 +39,58 @@ def dashboard(request, year, month):
     else:
         next_month, next_year = month + 1, year
 
-    # Pour un affichage plus propre en français
     months_fr = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
     current_month_name = months_fr[month]
     
-    # 1. Inbox : Transactions non traitées
+    # --- 2. RÉCUPÉRATION DES TRANSACTIONS ---
+    # Inbox : On regarde la date de BANQUE
     unprocessed = Transaction.objects.filter(
         owner=owner, is_processed=False,
         bank_date__year=year, bank_date__month=month
     )
 
-    # 2. On récupère TOUTES les catégories pour construire le tableau
+    # Totaux : On regarde la date PERSONNALISÉE (ton choix de budget)
+    processed_tx = Transaction.objects.filter(
+        owner=owner, is_processed=True,
+        custom_date__year=year, custom_date__month=month
+    )
+
+    # --- 3. CALCUL DES CATÉGORIES ---
     categories = Category.objects.all()
     stats = []
 
     for cat in categories:
-        # 1. On cherche d'abord s'il y a une exception pour CE mois précis
-        try:
-            budget_obj = MonthlyBudget.objects.get(owner=owner, category=cat, year=year, month=month)
+        # Budget (Exception mensuelle ou défaut)
+        budget_obj = MonthlyBudget.objects.filter(owner=owner, category=cat, year=year, month=month).first()
+        if budget_obj:
             target_amount = budget_obj.target_amount
-        except MonthlyBudget.DoesNotExist:
-            # 2. S'il n'y a pas d'exception, on cherche le budget "Classique/Défaut"
-            try:
-                default_obj = DefaultBudget.objects.get(owner=owner, category=cat)
-                target_amount = default_obj.amount
-            except DefaultBudget.DoesNotExist:
-                # 3. S'il n'y a ni exception ni défaut, l'enveloppe est à 0
-                target_amount = 0
+        else:
+            default_obj = DefaultBudget.objects.filter(owner=owner, category=cat).first()
+            target_amount = default_obj.amount if default_obj else 0
         
-        # On calcule le coût réel (somme des montants négatifs)
-        real_cost = Transaction.objects.filter(
-            owner=owner, category=cat, is_processed=True,
-            custom_amount__lt=0, # négatif
-            custom_date__year=year, custom_date__month=month
-        ).aggregate(total=Sum('custom_amount'))['total'] or 0
-
-        # On calcule le gain réel (somme des montants positifs)
-        real_gain = Transaction.objects.filter(
-            owner=owner, category=cat, is_processed=True,
-            custom_amount__gt=0, # positif
-            custom_date__year=year, custom_date__month=month
-        ).aggregate(total=Sum('custom_amount'))['total'] or 0
-
-        real_cost_abs = abs(real_cost) 
+        # On filtre les transactions traitées du mois pour cette catégorie
+        cat_tx = processed_tx.filter(category=cat)
         
-        delta = target_amount - real_cost_abs
-
+        real_cost = abs(cat_tx.filter(custom_amount__lt=0).aggregate(Sum('custom_amount'))['custom_amount__sum'] or 0)
+        real_gain = cat_tx.filter(custom_amount__gt=0).aggregate(Sum('custom_amount'))['custom_amount__sum'] or 0
+        
+        delta = target_amount - real_cost
         link = CategoryEnvelopeLink.objects.filter(owner=owner, category=cat).first()
 
         stats.append({
             'category': cat,
-            'target': target_amount, # Le prévu
-            'real_cost': real_cost_abs, # Le dépensé
-            'delta': delta, # Le reste
+            'target': target_amount,
+            'real_cost': real_cost,
+            'delta': delta,
             'real_gain': real_gain,
             'linked_env': link.envelope.name if link else None,
         })
 
-        processed_tx = Transaction.objects.filter(
-        owner=owner,
-        is_processed=True,
-        custom_date__year=year,
-        custom_date__month=month
-    )
-        # 1. Total des Entrées (Somme de toutes les rentrées d'argent > 0)
+    # --- 4. CALCULS DU RÉCAPITULATIF GLOBAL ---
     total_income = processed_tx.filter(custom_amount__gt=0).aggregate(Sum('custom_amount'))['custom_amount__sum'] or Decimal('0.00')
-    
-    # 2. Total des Sorties (Somme de toutes les dépenses < 0)
     total_expenses_raw = processed_tx.filter(custom_amount__lt=0).aggregate(Sum('custom_amount'))['custom_amount__sum'] or Decimal('0.00')
-    total_expenses = abs(total_expenses_raw) # On le met en positif pour l'affichage visuel
     
-    # 3. Capacité d'épargne (Reste à vivre / Bilan)
+    total_expenses = abs(total_expenses_raw)
     savings_capacity = total_income - total_expenses
 
     context = {
@@ -125,7 +107,7 @@ def dashboard(request, year, month):
         'total_income': total_income,
         'total_expenses': total_expenses,
         'savings_capacity': savings_capacity,
-        'categories_list': Category.objects.all(),
+        'categories_list': categories,
     }
     return render(request, 'moneymanager/dashboard.html', context)
 
@@ -444,6 +426,6 @@ def import_csv_action(request):
 
         messages.success(request, "Fichier importé !")
 
-        return redirect('moneymanager:dashboard', owner_name=owner.name.lower(), year=now.year, month=now.month)
+        return redirect('moneymanager:dashboard', year=now.year, month=now.month)
     
     return redirect('moneymanager:import_page')
