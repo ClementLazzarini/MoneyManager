@@ -7,7 +7,7 @@ import time
 import csv
 import hashlib
 from datetime import datetime
-from .models import Transaction, Category, MonthlyBudget, DefaultBudget, AccountBalance, GlobalEnvelope, CategoryEnvelopeLink
+from .models import Transaction, Category, MonthlyBudget, DefaultBudget, AccountBalance, GlobalEnvelope, CategoryEnvelopeLink, AutoCategoryRule
 
 def index(request):
     """Page d'accueil : Affiche le portail avec le bon contexte."""
@@ -388,8 +388,12 @@ def import_csv_action(request):
             decoded_file = csv_file.read().decode('latin-1').splitlines()
             
         reader = csv.DictReader(decoded_file, delimiter=';')
+
+        auto_rules = AutoCategoryRule.objects.filter(owner=owner)
         
         count_added = 0
+        count_auto = 0
+
         for row in reader:
             date_str = row.get('dateOp')
             label = row.get('label', '')
@@ -398,16 +402,27 @@ def import_csv_action(request):
             if not date_str or not amount_raw:
                 continue
 
-            # Nettoyage du montant (Bourso utilise la virgule et des espaces)
             amount_str = amount_raw.replace(',', '.').replace(' ', '')
             amount = Decimal(amount_str)
 
-            # Calcul du hash unique (identique à ton script import_csv.py)
             unique_string = f"{date_str}_{label}_{amount}"
             bank_ref = hashlib.md5(unique_string.encode('utf-8')).hexdigest()
 
             # Création si n'existe pas
             if not Transaction.objects.filter(bank_reference=bank_ref).exists():
+
+                # --- LE MOTEUR DE TRI AUTOMATIQUE ---
+                matched_category = None
+                is_processed = False
+                
+                # On teste chaque règle
+                for rule in auto_rules:
+                    # Si le mot-clé (en minuscules) est dans le libellé de la banque (en minuscules)
+                    if rule.keyword.lower() in label.lower():
+                        matched_category = rule.category
+                        is_processed = True
+                        break
+
                 Transaction.objects.create(
                     owner=owner,
                     bank_reference=bank_ref,
@@ -417,14 +432,25 @@ def import_csv_action(request):
                     bank_amount=amount,
                     custom_date=date_str,
                     custom_amount=amount,
-                    is_processed=False
+                    category=matched_category,
+                    is_processed=is_processed
                 )
+
+                if is_processed and matched_category:
+                    count_auto += 1
+                    link = CategoryEnvelopeLink.objects.filter(owner=owner, category=matched_category).first()
+                    if link:
+                        if link.link_type == 'PROVISION':
+                            link.envelope.amount -= amount
+                        elif link.link_type == 'EXPENSE':
+                            link.envelope.amount += amount
+                        link.envelope.save()
+                        
                 count_added += 1
                 
-        # Redirection vers le dashboard avec un petit message de succès par exemple
         now = datetime.now()
 
-        messages.success(request, "Fichier importé !")
+        messages.success(request, f"Import terminé : {count_added} nouveautés dont {count_auto} classées auto ! ✨")
 
         return redirect('moneymanager:dashboard', year=now.year, month=now.month)
     

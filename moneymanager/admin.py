@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, Transaction, Owner, MonthlyBudget, DefaultBudget, AccountBalance, GlobalEnvelope, CategoryEnvelopeLink
+from .models import Category, Transaction, Owner, MonthlyBudget, DefaultBudget, AccountBalance, GlobalEnvelope, CategoryEnvelopeLink, AutoCategoryRule
 
 # --- PERSONNALISATION DE L'INTERFACE GLOBALE ---
 admin.site.site_header = "Administration MoneyManager"
@@ -71,3 +71,11 @@ class AccountBalanceAdmin(admin.ModelAdmin):
 class CategoryEnvelopeLinkAdmin(admin.ModelAdmin):
     list_display = ('owner', 'category', 'envelope', 'link_type')
     list_filter = ('owner', 'link_type', 'envelope')
+
+
+@admin.register(AutoCategoryRule)
+class AutoCategoryRuleAdmin(admin.ModelAdmin):
+    list_display = ('keyword', 'category', 'owner')
+    list_filter = ('owner', 'category')
+    search_fields = ('keyword',)
+    list_editable = ('category',)

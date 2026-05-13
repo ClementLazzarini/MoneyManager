@@ -178,3 +178,19 @@ class CategoryEnvelopeLink(models.Model):
 
     def __str__(self):
         return f"Pont {self.owner.name} : {self.category.name} -> {self.envelope.name}"
+    
+
+class AutoCategoryRule(models.Model):
+    owner = models.ForeignKey(Owner, on_delete=models.CASCADE, related_name='auto_rules')
+    keyword = models.CharField(max_length=100, help_text="Ex: LECLERC, NETFLIX, EDF...")
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+
+    class Meta:
+        verbose_name = "Règle de tri auto"
+        verbose_name_plural = "Règles de tri auto"
+        unique_together = ('owner', 'keyword', 'category')
+
+    def __str__(self):
+        return f"Si contient '{self.keyword}' -> {self.category.name}"
+    
+    
