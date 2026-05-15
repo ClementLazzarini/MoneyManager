@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% load tailwind_tags %}
+
+{% block title %}Paramètres - {{ owner.name }}{% endblock title %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-8">
+    
+    <div class="bg-gray-900 text-white rounded-2xl shadow-lg flex justify-between items-center px-6 py-5">
+        <div>
+            <h1 class="font-black text-2xl tracking-wide uppercase italic">Configuration</h1>
+            <p class="text-gray-400 text-sm font-medium mt-1">Gérez vos catégories et vos automatisations</p>
+        </div>
+        <div class="text-3xl">⚙️</div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        
+        <div class="space-y-6">
+            
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <h2 class="text-lg font-black uppercase text-purple-600 mb-4 flex items-center gap-2">
+                    <span>⚡</span> Nouvelle règle auto
+                </h2>
+                <form method="POST" action="{% url 'moneymanager:add_auto_rule' %}" class="space-y-4">
+                    {% csrf_token %}
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Mot-clé (Banque)</label>
+                        <input type="text" name="keyword" required placeholder="Ex: NETFLIX, LECLERC..." 
+                               class="w-full border-gray-300 rounded-xl shadow-sm focus:border-purple-500 focus:ring-purple-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Classer dans</label>
+                        <select name="category_id" required class="w-full border-gray-300 rounded-xl shadow-sm focus:border-purple-500 focus:ring-purple-500">
+                            <option value="">-- Choisir une catégorie --</option>
+                            {% for cat in categories %}
+                                <option value="{{ cat.id }}">{{ cat.name }} {% if cat.owner %}🔒{% endif %}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full bg-purple-600 text-white font-bold py-3 rounded-xl shadow-md hover:bg-purple-700 transition active:scale-95">
+                        Ajouter la règle
+                    </button>
+                </form>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <h3 class="text-sm font-black uppercase text-gray-800 mb-4">Vos règles actives ({{ auto_rules.count }})</h3>
+                <div class="space-y-2 max-h-64 overflow-y-auto pr-2">
+                    {% for rule in auto_rules %}
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+                        <div class="flex flex-col">
+                            <span class="font-bold text-gray-800 text-sm">"{{ rule.keyword }}"</span>
+                            <span class="text-xs text-gray-500 font-medium flex items-center gap-1">
+                                ➡️ {{ rule.category.icon }} {{ rule.category.name }}
+                            </span>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-xs text-gray-400 italic text-center py-4">Aucune règle configurée.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="space-y-6">
+            
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <h2 class="text-lg font-black uppercase text-blue-600 mb-4 flex items-center gap-2">
+                    <span>📁</span> Nouvelle catégorie
+                </h2>
+                <form method="POST" action="{% url 'moneymanager:add_category' %}" class="space-y-4">
+                    {% csrf_token %}
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nom</label>
+                        <input type="text" name="name" required placeholder="Ex: Micro-entreprise, Cadeaux..." 
+                               class="w-full border-gray-300 rounded-xl shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Icône (Emoji)</label>
+                            <input type="text" name="icon" value="📁" required 
+                                   class="w-full border-gray-300 rounded-xl shadow-sm focus:border-blue-500 focus:ring-blue-500 text-center text-xl">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Couleur</label>
+                            <select name="color_code" required class="w-full border-gray-300 rounded-xl shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                <option value="gray">Gris</option>
+                                <option value="blue">Bleu</option>
+                                <option value="purple">Violet</option>
+                                <option value="green">Vert</option>
+                                <option value="red">Rouge</option>
+                                <option value="orange">Orange</option>
+                                <option value="pink">Rose</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <label class="flex items-center gap-3 p-3 bg-blue-50 rounded-xl border border-blue-100 cursor-pointer hover:bg-blue-100 transition">
+                        <input type="checkbox" name="is_private" value="True" class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <div class="flex flex-col">
+                            <span class="text-sm font-bold text-blue-900">Catégorie privée</span>
+                            <span class="text-[10px] text-blue-700 leading-tight">Cochez cette case pour qu'elle n'apparaisse que sur votre compte.</span>
+                        </div>
+                    </label>
+
+                    <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-md hover:bg-blue-700 transition active:scale-95">
+                        Créer la catégorie
+                    </button>
+                </form>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <h3 class="text-sm font-black uppercase text-gray-800 mb-4">Vos catégories ({{ categories.count }})</h3>
+                <div class="space-y-2 max-h-64 overflow-y-auto pr-2">
+                    {% for cat in categories %}
+                    <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-100 shadow-sm">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-{{ cat.color_code }}-50 text-{{ cat.color_code }}-600 border border-{{ cat.color_code }}-100 text-sm">
+                                {{ cat.icon }}
+                            </div>
+                            <span class="font-bold text-gray-700 text-sm">{{ cat.name }}</span>
+                        </div>
+                        {% if cat.owner %}
+                            <span class="text-[10px] font-black uppercase tracking-wider text-blue-500 bg-blue-50 px-2 py-1 rounded-full border border-blue-100">
+                                Privée
+                            </span>
+                        {% else %}
+                            <span class="text-[10px] font-black uppercase tracking-wider text-green-500 bg-green-50 px-2 py-1 rounded-full border border-green-100">
+                                Commune
+                            </span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock content %}

@@ -1,5 +1,5 @@
 from django.shortcuts import redirect, render, get_object_or_404
-from django.db.models import Sum
+from django.db.models import Sum, Q
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from decimal import Decimal
@@ -56,7 +56,7 @@ def dashboard(request, year, month):
     )
 
     # --- 3. CALCUL DES CATÉGORIES ---
-    categories = Category.objects.all()
+    categories = Category.objects.filter(Q(owner__isnull=True) | Q(owner=owner)).order_by('name')
     stats = []
 
     for cat in categories:
@@ -455,3 +455,71 @@ def import_csv_action(request):
         return redirect('moneymanager:dashboard', year=now.year, month=now.month)
     
     return redirect('moneymanager:import_page')
+
+
+@login_required
+def settings_page(request):
+    """Affiche la page des paramètres avec les catégories et les règles."""
+    owner = request.user.owner_profile
+    now = datetime.now()
+    
+    # On récupère les catégories (Communes + Privées de l'utilisateur)
+    categories = Category.objects.filter(Q(owner__isnull=True) | Q(owner=owner)).order_by('name')
+    
+    # On récupère les règles de l'utilisateur
+    auto_rules = AutoCategoryRule.objects.filter(owner=owner)
+
+    context = {
+        'owner': owner,
+        'year': now.year,
+        'month': now.month,
+        'categories': categories,
+        'auto_rules': auto_rules,
+    }
+    return render(request, 'moneymanager/settings.html', context)
+
+
+@login_required
+def add_category(request):
+    """Création d'une nouvelle catégorie depuis le frontend."""
+    if request.method == 'POST':
+        owner = request.user.owner_profile
+        name = request.POST.get('name')
+        icon = request.POST.get('icon', '📁')
+        color_code = request.POST.get('color_code', 'gray')
+        is_private = request.POST.get('is_private') # Checkbox
+
+        Category.objects.create(
+            name=name,
+            icon=icon,
+            color_code=color_code,
+            owner=owner if is_private else None # Si coché -> Privé, sinon -> Commun
+        )
+        messages.success(request, f"Catégorie '{name}' créée !")
+        
+    return redirect('moneymanager:settings_page')
+
+
+@login_required
+def add_auto_rule(request):
+    """Création d'une nouvelle règle de tri auto."""
+    if request.method == 'POST':
+        owner = request.user.owner_profile
+        keyword = request.POST.get('keyword')
+        category_id = request.POST.get('category_id')
+        
+        category = get_object_or_404(Category, id=category_id)
+        
+        # get_or_create permet d'éviter les erreurs si la règle existe déjà
+        rule, created = AutoCategoryRule.objects.get_or_create(
+            owner=owner,
+            keyword=keyword,
+            category=category
+        )
+        
+        if created:
+            messages.success(request, f"Règle '{keyword}' activée !")
+        else:
+            messages.error(request, f"Cette règle existe déjà.")
+            
+    return redirect('moneymanager:settings_page')

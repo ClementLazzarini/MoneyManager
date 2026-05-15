@@ -31,4 +31,9 @@ urlpatterns = [
     path('import/', views.import_page, name='import_page'),
     path('import-action/', views.import_csv_action, name='import_csv_action'),
 
+    # Paramètres & Configuration
+    path('settings/', views.settings_page, name='settings_page'),
+    path('settings/add-category/', views.add_category, name='add_category'),
+    path('settings/add-rule/', views.add_auto_rule, name='add_auto_rule'),
+
 ]

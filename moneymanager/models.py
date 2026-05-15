@@ -2,29 +2,30 @@ from django.db import models
 from decimal import Decimal
 from django.contrib.auth.models import User
 
-class Category(models.Model):
-    """
-    Vos propres catégories ou enveloppes.
-    """
-    name = models.CharField(max_length=100)
-    icon = models.CharField(max_length=5, default="📁", help_text="Émoji pour identifier la catégorie")
-    color_code = models.CharField(
-        max_length=20, 
-        default="purple", 
-        help_text="Couleur de base (ex: blue, green, red, yellow, pink, indigo)"
-    )
-
-    def __str__(self):
-        return f"{self.icon} {self.name}"
-    
-
 class Owner(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True, related_name='owner_profile')
     name = models.CharField(max_length=100, unique=True)
 
     def __str__(self):
         return self.name
+    
 
+class Category(models.Model):
+    name = models.CharField(max_length=100)
+    icon = models.CharField(max_length=20, default='📁')
+    color_code = models.CharField(max_length=20, default='gray')
+    
+    # === LE NOUVEAU CHAMP ===
+    owner = models.ForeignKey(Owner, on_delete=models.CASCADE, null=True, blank=True, related_name='custom_categories', help_text="Laisser vide pour une catégorie commune. Remplir pour une catégorie privée.")
+
+    class Meta:
+        verbose_name = "Catégorie"
+        verbose_name_plural = "Catégories"
+
+    def __str__(self):
+        visibility = f"({self.owner.name})" if self.owner else "(Commune)"
+        return f"{self.name} {visibility}"
+    
 
 class Transaction(models.Model):
     # ==========================================
@@ -170,7 +171,6 @@ class CategoryEnvelopeLink(models.Model):
     link_type = models.CharField(max_length=20, choices=LINK_TYPES, default='EXPENSE', help_text="Détermine comment la transaction impacte l'enveloppe.")
 
     class Meta:
-        # Une catégorie mensuelle ne peut pointer que vers une seule enveloppe pour une personne
         unique_together = ('owner', 'category')
         
     def get_link_type_display(self):
@@ -192,5 +192,4 @@ class AutoCategoryRule(models.Model):
 
     def __str__(self):
         return f"Si contient '{self.keyword}' -> {self.category.name}"
-    
     
