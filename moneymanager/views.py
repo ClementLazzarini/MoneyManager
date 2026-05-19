@@ -253,18 +253,15 @@ def wealth_dashboard(request):
 def add_global_envelope(request):
     if request.method == 'POST':
         owner = request.user.owner_profile
-        
-        # Récupération des données du formulaire
         name = request.POST.get('name')
         amount = request.POST.get('amount', 0)
+        target_str = request.POST.get('target_amount', '')
         comment = request.POST.get('comment', '')
+        target_amount = Decimal(target_str.replace(',', '.')) if target_str else None
 
-        # Création de l'enveloppe
         GlobalEnvelope.objects.create(
-            owner=owner,
-            name=name,
-            amount=amount,
-            comment=comment
+            owner=owner, name=name, amount=amount, 
+            target_amount=target_amount, comment=comment
         )
         
         return redirect('moneymanager:wealth_dashboard')
@@ -294,8 +291,12 @@ def edit_global_envelope(request, envelope_id):
         owner = request.user.owner_profile
         envelope = get_object_or_404(GlobalEnvelope, id=envelope_id, owner=owner)
         envelope.name = request.POST.get('name')
-        envelope.amount = request.POST.get('amount')
-        envelope.comment = request.POST.get('comment')
+        envelope.amount = request.POST.get('amount', 0)
+        
+        target_str = request.POST.get('target_amount', '')
+        envelope.target_amount = Decimal(target_str.replace(',', '.')) if target_str else None
+        
+        envelope.comment = request.POST.get('comment', '')
         envelope.save()
         return redirect('moneymanager:wealth_dashboard')
     

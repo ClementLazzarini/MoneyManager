@@ -14,8 +14,6 @@ class Category(models.Model):
     name = models.CharField(max_length=100)
     icon = models.CharField(max_length=20, default='📁')
     color_code = models.CharField(max_length=20, default='gray')
-    
-    # === LE NOUVEAU CHAMP ===
     owner = models.ForeignKey(Owner, on_delete=models.CASCADE, null=True, blank=True, related_name='custom_categories', help_text="Laisser vide pour une catégorie commune. Remplir pour une catégorie privée.")
 
     class Meta:
@@ -147,6 +145,7 @@ class GlobalEnvelope(models.Model):
     owner = models.ForeignKey(Owner, on_delete=models.CASCADE, related_name='global_envelopes')
     name = models.CharField(max_length=100, help_text="Ex: Big voyage, Sécurité, Holidays 2025")
     amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), help_text="Montant alloué (peut être négatif pour une avance)")
+    target_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="Objectif à atteindre (Optionnel)")
     comment = models.CharField(max_length=255, blank=True, null=True, help_text="Notes (Ex: RTX)")
     
     class Meta:
@@ -154,6 +153,15 @@ class GlobalEnvelope(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.owner.name}) : {self.amount} €"
+    
+    # === LE CALCULATEUR DE POURCENTAGE ===
+    @property
+    def progress_percentage(self):
+        """Calcule le pourcentage d'accomplissement de l'objectif (bloqué entre 0 et 100)"""
+        if self.target_amount and self.target_amount > 0:
+            percent = (self.amount / self.target_amount) * 100
+            return min(max(int(percent), 0), 100) # Empêche d'avoir -10% ou 150% sur la barre
+        return 0
 
 
 class CategoryEnvelopeLink(models.Model):
